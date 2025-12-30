@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'Admin',
             'email' => 'cikguinfo@gmail.com',
+            'email_verified_at' => now(),
             'password' => Hash::make('12345678'),
         ]);
     }

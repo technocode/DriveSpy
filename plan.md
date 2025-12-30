@@ -1,0 +1,334 @@
+# Google Drive Folder Activity Monitor (Laravel 12 + Filament 4)
+
+A Laravel app (admin panel) to **monitor activity inside selected Google Drive folders** (including **all nested subfolders**) so you can see what changed (created/edited/moved/trashed/permissions, etc.) and when.
+
+---
+
+## 0) Scope (what we will build first)
+
+### MVP (must-have)
+- Connect a Google account via OAuth
+- Select one or more **root folders** to monitor (e.g. `Bahan Penulis RPH365`)
+- Automatically **discover/track the full folder tree** (e.g. `Sekolah Rendah` → many subfolders)
+- Periodic sync that:
+  - Detects file/folder metadata changes
+  - Records “events” (change log) in DB
+- Filament panel pages:
+  - Accounts (connected Google accounts)
+  - Monitored folders
+  - Drive items (files/folders)
+  - Activity log (filterable)
+  - Sync runs & errors
+
+### Nice-to-have (can be skipped if time is tight)
+- Push notifications / email alerts
+- Per-user permissions/teams (multi-tenant)
+- Full text search content (requires download / indexing)
+- Real-time push via webhooks (Drive “Changes” push notifications)
+
+---
+
+## 1) Key design decisions
+
+### 1.1 How to detect “activity”
+Use Google Drive API **Changes** feed (recommended) if possible:
+- Store `startPageToken`
+- Fetch changes incrementally since last token
+- For each change, store an event record and update local snapshot
+
+Fallback if needed:
+- Periodic crawl listing folder contents + compare `modifiedTime`, `md5Checksum`, `trashed`, `parents`, `permissions` (more API calls)
+
+### 1.2 Recursive folder monitoring (“trace it” requirement)
+When a root folder is selected:
+- Crawl children folders and files
+- Persist each Drive item locally
+- Maintain parent/child relationships
+- Keep refreshing subtree periodically (or when changes feed indicates new folders)
+
+---
+
+## 2) Plan of action (implementation steps)
+
+### Phase A — Project + Admin Panel Foundation
+1. Add basic layout, navigation, and roles (optional)
+
+### Phase B — Google OAuth + Account Connection
+1. Create Google Cloud Project + OAuth credentials
+2. Implement OAuth flow (use Socialite + Google provider or google/apiclient directly)
+3. Store tokens securely:
+   - access token + refresh token
+   - expiry time
+4. Background job to refresh tokens when needed
+
+### Phase C — Folder Selection + Initial Indexing
+1. UI: “Pick folder to monitor”
+   - Option A: paste folder URL / ID
+   - Option B: browse picker (later)
+2. On save:
+   - validate folder exists and is accessible
+   - create `monitored_folders` record
+3. Run “Initial Index” job:
+   - list folder contents recursively
+   - create/update `drive_items` records
+
+### Phase D — Change Tracking (Core Monitoring)
+1. For each google account:
+   - store Drive Changes `startPageToken`
+2. Scheduled job (every 5–15 minutes):
+   - fetch changes since last token
+   - map changes to local `drive_items`
+   - create `drive_events`
+   - update stored token
+3. Add “sync_runs” to keep history + diagnostics
+
+### Phase E — Filament Resources (Views)
+1. Google Accounts resource
+   - token status, last sync, reconnect action
+2. Monitored Folders resource
+   - root folder, status, depth stats, reindex button
+3. Drive Items resource
+   - filter by folder/root, type, trashed, modified time
+4. Drive Events resource
+   - filter by root folder, actor (if available), type, date range
+5. Sync Runs resource
+   - durations, counts, errors, last page token
+
+### Phase F — Hardening / Limits
+- Rate limiting + exponential backoff
+- Handle “shared drives” (optional)
+- Handle permission errors gracefully
+- Soft deletes for removed items
+- DB indexes for performance
+
+---
+
+## 3) Database structure (tables + columns)
+
+> Notes:
+> - Use UUIDs or bigints; below uses bigints for simplicity.
+> - Store Google Drive IDs as strings (they’re not numeric).
+> - `drive_items` is your **local snapshot** of Drive.
+> - `drive_events` is your **append-only log** of detected activity.
+
+---
+
+### 3.1 `users`
+If you use Filament’s default auth.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| name | string | |
+| email | string unique | |
+| password | string | |
+| created_at / updated_at | timestamps | |
+
+---
+
+### 3.2 `google_accounts`
+Connected Google accounts (one per Google identity).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| user_id | bigint FK nullable | Link to app user (optional if single-user app) |
+| google_user_id | string index | Google “sub” / user id |
+| email | string index | Account email |
+| display_name | string nullable | |
+| avatar_url | string nullable | |
+| access_token | text | encrypted |
+| refresh_token | text nullable | encrypted (may be null in some flows) |
+| token_expires_at | datetime nullable | |
+| scopes | text nullable | space-separated or json |
+| drive_start_page_token | string nullable | for Changes API |
+| last_synced_at | datetime nullable | |
+| status | string default `active` | `active`, `revoked`, `error` |
+| last_error | text nullable | |
+| created_at / updated_at | timestamps | |
+
+**Indexes**
+- `google_user_id`
+- `email`
+- `(user_id, status)`
+
+---
+
+### 3.3 `monitored_folders`
+Which Drive folders are being monitored (root folders).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| google_account_id | bigint FK | |
+| root_drive_file_id | string index | Drive folder ID (e.g. “Bahan Penulis RPH365”) |
+| root_name | string | cached folder name |
+| include_subfolders | boolean default true | you want true |
+| status | string default `active` | `active`, `paused`, `error` |
+| last_indexed_at | datetime nullable | last full crawl |
+| last_changed_at | datetime nullable | latest event time |
+| last_error | text nullable | |
+| created_at / updated_at | timestamps | |
+
+**Indexes**
+- `(google_account_id, status)`
+- `root_drive_file_id`
+
+---
+
+### 3.4 `drive_items`
+Local snapshot of all files/folders discovered under monitored roots.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| google_account_id | bigint FK | |
+| monitored_folder_id | bigint FK | root monitor owning this snapshot |
+| drive_file_id | string index | Google Drive file/folder id |
+| parent_drive_file_id | string nullable index | parent drive id (best-effort) |
+| name | string | |
+| mime_type | string index | folder mime or file mime |
+| is_folder | boolean index | derived from mime_type |
+| path_cache | text nullable | optional: cached “/A/B/C” |
+| size_bytes | bigint nullable | null for folders |
+| md5_checksum | string nullable | for binary files |
+| modified_time | datetime nullable | from Drive |
+| created_time | datetime nullable | from Drive |
+| trashed | boolean default false | |
+| starred | boolean default false | optional |
+| owned_by_me | boolean default false | optional |
+| owners_json | json nullable | owners array |
+| permissions_json | json nullable | optional (heavy) |
+| last_seen_at | datetime nullable | last time found in crawl/changes |
+| deleted_at | datetime nullable | soft delete if needed |
+| created_at / updated_at | timestamps | |
+
+**Indexes**
+- `(monitored_folder_id, is_folder)`
+- `(monitored_folder_id, modified_time)`
+- `(google_account_id, drive_file_id)` unique recommended
+- `parent_drive_file_id`
+
+---
+
+### 3.5 `drive_events`
+Append-only change log of detected activity.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| google_account_id | bigint FK | |
+| monitored_folder_id | bigint FK | which monitored root this belongs to |
+| drive_file_id | string index | affected file/folder |
+| event_type | string index | `created`, `updated`, `moved`, `renamed`, `trashed`, `restored`, `permission_changed` |
+| change_source | string default `changes_api` | `changes_api` or `crawl_diff` |
+| occurred_at | datetime index | when detected / when change happened (best-effort) |
+| actor_email | string nullable index | if obtainable |
+| actor_name | string nullable | |
+| before_json | json nullable | snapshot before |
+| after_json | json nullable | snapshot after |
+| summary | string nullable | short human summary |
+| created_at / updated_at | timestamps | |
+
+**Indexes**
+- `(monitored_folder_id, occurred_at)`
+- `(drive_file_id, occurred_at)`
+- `event_type`
+
+---
+
+### 3.6 `sync_runs`
+Track each sync execution for auditing and debugging.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| google_account_id | bigint FK | |
+| monitored_folder_id | bigint FK nullable | null if account-wide changes sync |
+| run_type | string index | `initial_index`, `changes_sync`, `reindex` |
+| status | string index | `success`, `failed`, `partial` |
+| started_at | datetime index | |
+| finished_at | datetime nullable | |
+| items_scanned | integer default 0 | |
+| changes_fetched | integer default 0 | |
+| events_created | integer default 0 | |
+| next_page_token | string nullable | for paginated calls |
+| error_message | text nullable | |
+| meta_json | json nullable | anything else |
+| created_at / updated_at | timestamps | |
+
+**Indexes**
+- `(google_account_id, started_at)`
+- `(status, started_at)`
+
+---
+
+### 3.7 `app_settings` (optional)
+Simple settings store for single-user deployments.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint PK | |
+| key | string unique | |
+| value | json nullable | |
+| created_at / updated_at | timestamps | |
+
+---
+
+## 4) Filament pages/resources (suggested)
+
+### Resources
+- **GoogleAccountResource**
+  - list: email, status, last_synced_at
+  - actions: reconnect, revoke, sync now
+- **MonitoredFolderResource**
+  - list: root_name, status, last_indexed_at, last_changed_at
+  - actions: reindex, pause/resume
+- **DriveItemResource**
+  - filters: monitored folder, folder/file, trashed, modified time
+  - show: metadata, parents, permissions_json (optional)
+- **DriveEventResource**
+  - filters: monitored folder, event_type, drive_file_id, date range
+- **SyncRunResource**
+  - show: logs and errors
+
+### Widgets (dashboard)
+- Events last 24h
+- Top folders by activity
+- Latest sync status
+
+---
+
+## 5) Scheduling / Jobs (Laravel)
+
+### Scheduled commands
+- `drive:sync-changes` (every 5–15 min)
+- `drive:refresh-index` (nightly or weekly, optional)
+- `drive:cleanup` (prune old sync_runs, optional)
+
+### Queued jobs
+- `InitialIndexJob(monitored_folder_id)`
+- `SyncChangesJob(google_account_id)`
+- `ReindexFolderJob(monitored_folder_id)`
+
+---
+
+## 6) “Good enough” shortcuts (when a feature takes too long)
+
+- Skip actor/permission details at first (store only what Drive returns easily)
+- Skip Drive Picker UI: paste folder ID/URL
+- Skip push notifications/webhooks: scheduled polling only
+- Store limited `before_json/after_json` fields (name, parent, trashed, modified_time)
+
+---
+
+## 7) Acceptance checklist (MVP)
+
+- [ ] Connect Google account successfully, tokens saved
+- [ ] Add root folder ID to monitor
+- [ ] Initial index stores nested structure (folders + files)
+- [ ] Scheduled sync creates events when you rename/move/edit/trash something inside any nested folder
+- [ ] Filament: filter activity by root folder and date range
+- [ ] Sync run logs show errors when something fails
+
+---

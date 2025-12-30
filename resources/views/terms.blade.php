@@ -264,7 +264,7 @@
                 </p>
                 <ul class="list-disc pl-6 text-gray-700 mb-4">
                     <li>Deleting your account through your dashboard</li>
-                    <li>Contacting us at support@drivespy.test</li>
+                    <li>Contacting us at support{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</li>
                 </ul>
 
                 <h3 class="text-xl font-semibold text-gray-900 mb-3">12.2 By Us</h3>
@@ -294,7 +294,7 @@
 
                 <h3 class="text-xl font-semibold text-gray-900 mb-3">13.1 Informal Resolution</h3>
                 <p class="text-gray-700 mb-4">
-                    Before filing a claim, you agree to contact us at legal@drivespy.test to attempt to resolve the dispute informally.
+                    Before filing a claim, you agree to contact us at legal{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }} to attempt to resolve the dispute informally.
                 </p>
 
                 <h3 class="text-xl font-semibold text-gray-900 mb-3">13.2 Governing Law</h3>
@@ -343,9 +343,9 @@
                     For questions about these Terms, please contact us:
                 </p>
                 <ul class="list-none text-gray-700 mb-4">
-                    <li class="mb-2"><strong>General Inquiries:</strong> <a href="mailto:support@drivespy.test" class="text-blue-600 hover:text-blue-800 underline">support@drivespy.test</a></li>
-                    <li class="mb-2"><strong>Legal Matters:</strong> <a href="mailto:legal@drivespy.test" class="text-blue-600 hover:text-blue-800 underline">legal@drivespy.test</a></li>
-                    <li class="mb-2"><strong>Privacy Concerns:</strong> <a href="mailto:privacy@drivespy.test" class="text-blue-600 hover:text-blue-800 underline">privacy@drivespy.test</a></li>
+                    <li class="mb-2"><strong>General Inquiries:</strong> <a href="mailto:support{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}" class="text-blue-600 hover:text-blue-800 underline">support{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</a></li>
+                    <li class="mb-2"><strong>Legal Matters:</strong> <a href="mailto:legal{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}" class="text-blue-600 hover:text-blue-800 underline">legal{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</a></li>
+                    <li class="mb-2"><strong>Privacy Concerns:</strong> <a href="mailto:privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}" class="text-blue-600 hover:text-blue-800 underline">privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</a></li>
                 </ul>
             </section>
 

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "mcp__laravel-boost__get-absolute-url",
+      "Bash(curl:*)"
     ]
   }
 }

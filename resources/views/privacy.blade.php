@@ -151,7 +151,7 @@
                     <li><strong>Object:</strong> Object to processing of your data</li>
                 </ul>
                 <p class="text-gray-700 mb-4">
-                    To exercise these rights, contact us at: <a href="mailto:privacy@drivespy.test" class="text-blue-600 hover:text-blue-800 underline">privacy@drivespy.test</a>
+                    To exercise these rights, contact us at: <a href="mailto:privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}" class="text-blue-600 hover:text-blue-800 underline">privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</a>
                 </p>
             </section>
 
@@ -221,7 +221,7 @@
                     If you have questions or concerns about this privacy policy or our data practices, please contact us:
                 </p>
                 <ul class="list-none text-gray-700 mb-4">
-                    <li class="mb-2"><strong>Email:</strong> <a href="mailto:privacy@drivespy.test" class="text-blue-600 hover:text-blue-800 underline">privacy@drivespy.test</a></li>
+                    <li class="mb-2"><strong>Email:</strong> <a href="mailto:privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}" class="text-blue-600 hover:text-blue-800 underline">privacy{{ '@' }}{{ strtolower(parse_url(config('app.url'), PHP_URL_HOST)) }}</a></li>
                     <li class="mb-2"><strong>Website:</strong> <a href="{{ route('home') }}" class="text-blue-600 hover:text-blue-800 underline">{{ config('app.url') }}</a></li>
                 </ul>
             </section>

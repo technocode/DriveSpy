@@ -51,8 +51,9 @@ it('navigates into a subfolder and updates breadcrumbs', function () {
     $account = GoogleAccount::factory()->create(['user_id' => $this->user->id]);
 
     Livewire::test(GoogleDriveFolderPicker::class, ['googleAccountId' => $account->id])
-        ->call('navigateToFolder', 'folder-123', 'Documents')
+        ->call('openFolder', 'folder-123', 'Documents')
         ->assertSet('currentFolderId', 'folder-123')
+        ->assertSet('currentFolderName', 'Documents')
         ->assertCount('breadcrumbs', 2)
         ->assertSet('breadcrumbs.1.id', 'folder-123')
         ->assertSet('breadcrumbs.1.name', 'Documents');
@@ -62,10 +63,11 @@ it('navigates through multiple folders', function () {
     $account = GoogleAccount::factory()->create(['user_id' => $this->user->id]);
 
     Livewire::test(GoogleDriveFolderPicker::class, ['googleAccountId' => $account->id])
-        ->call('navigateToFolder', 'folder-1', 'Folder 1')
-        ->call('navigateToFolder', 'folder-2', 'Folder 2')
-        ->call('navigateToFolder', 'folder-3', 'Folder 3')
+        ->call('openFolder', 'folder-1', 'Folder 1')
+        ->call('openFolder', 'folder-2', 'Folder 2')
+        ->call('openFolder', 'folder-3', 'Folder 3')
         ->assertSet('currentFolderId', 'folder-3')
+        ->assertSet('currentFolderName', 'Folder 3')
         ->assertCount('breadcrumbs', 4);
 });
 
@@ -73,11 +75,12 @@ it('navigates back using breadcrumbs', function () {
     $account = GoogleAccount::factory()->create(['user_id' => $this->user->id]);
 
     Livewire::test(GoogleDriveFolderPicker::class, ['googleAccountId' => $account->id])
-        ->call('navigateToFolder', 'folder-1', 'Folder 1')
-        ->call('navigateToFolder', 'folder-2', 'Folder 2')
+        ->call('openFolder', 'folder-1', 'Folder 1')
+        ->call('openFolder', 'folder-2', 'Folder 2')
         ->assertCount('breadcrumbs', 3)
         ->call('navigateToBreadcrumb', 0)
         ->assertSet('currentFolderId', 'root')
+        ->assertSet('currentFolderName', 'My Drive')
         ->assertCount('breadcrumbs', 1);
 });
 
@@ -94,10 +97,11 @@ it('resets state when google account is changed', function () {
     $account2 = GoogleAccount::factory()->create(['user_id' => $this->user->id]);
 
     Livewire::test(GoogleDriveFolderPicker::class, ['googleAccountId' => $account1->id])
-        ->call('navigateToFolder', 'folder-1', 'Folder 1')
+        ->call('openFolder', 'folder-1', 'Folder 1')
         ->assertCount('breadcrumbs', 2)
         ->set('googleAccountId', $account2->id)
         ->assertSet('currentFolderId', 'root')
+        ->assertSet('currentFolderName', 'My Drive')
         ->assertCount('breadcrumbs', 1);
 });
 
@@ -105,9 +109,9 @@ it('maintains correct breadcrumb trail when navigating', function () {
     $account = GoogleAccount::factory()->create(['user_id' => $this->user->id]);
 
     Livewire::test(GoogleDriveFolderPicker::class, ['googleAccountId' => $account->id])
-        ->call('navigateToFolder', 'folder-1', 'Photos')
-        ->call('navigateToFolder', 'folder-2', '2024')
-        ->call('navigateToFolder', 'folder-3', 'January')
+        ->call('openFolder', 'folder-1', 'Photos')
+        ->call('openFolder', 'folder-2', '2024')
+        ->call('openFolder', 'folder-3', 'January')
         ->assertSet('breadcrumbs', [
             ['id' => 'root', 'name' => 'My Drive'],
             ['id' => 'folder-1', 'name' => 'Photos'],

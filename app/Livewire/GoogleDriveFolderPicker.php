@@ -12,41 +12,61 @@ class GoogleDriveFolderPicker extends Component
 
     public string $currentFolderId = 'root';
 
+    public string $currentFolderName = 'My Drive';
+
     public array $breadcrumbs = [];
 
     public array $folders = [];
+
+    public array $files = [];
 
     public bool $loading = false;
 
     public ?string $error = null;
 
+    protected $listeners = ['mountPicker' => 'handleMountPicker'];
+
     public function mount(?int $googleAccountId = null): void
     {
-        $this->googleAccountId = $googleAccountId;
+        if ($googleAccountId) {
+            $this->googleAccountId = $googleAccountId;
+            $this->initializeBreadcrumbs();
+            $this->loadContents();
+        }
+    }
 
-        if ($this->googleAccountId) {
-            $this->breadcrumbs = [
-                ['id' => 'root', 'name' => 'My Drive'],
-            ];
-            $this->loadFolders();
+    public function handleMountPicker($data): void
+    {
+        if (isset($data['accountId'])) {
+            $this->googleAccountId = $data['accountId'];
+            $this->reset(['currentFolderId', 'breadcrumbs', 'folders', 'files', 'error']);
+            $this->currentFolderId = 'root';
+            $this->currentFolderName = 'My Drive';
+            $this->initializeBreadcrumbs();
+            $this->loadContents();
         }
     }
 
     public function updatedGoogleAccountId(): void
     {
-        $this->currentFolderId = 'root';
-        $this->breadcrumbs = [
-            ['id' => 'root', 'name' => 'My Drive'],
-        ];
-        $this->folders = [];
-        $this->error = null;
+        $this->reset(['currentFolderId', 'breadcrumbs', 'folders', 'files', 'error']);
 
         if ($this->googleAccountId) {
-            $this->loadFolders();
+            $this->currentFolderId = 'root';
+            $this->currentFolderName = 'My Drive';
+            $this->initializeBreadcrumbs();
+            $this->loadContents();
         }
     }
 
-    public function loadFolders(): void
+    protected function initializeBreadcrumbs(): void
+    {
+        $this->breadcrumbs = [
+            ['id' => 'root', 'name' => 'My Drive'],
+        ];
+    }
+
+    public function loadContents(): void
     {
         if (! $this->googleAccountId) {
             return;
@@ -59,36 +79,74 @@ class GoogleDriveFolderPicker extends Component
             $account = GoogleAccount::findOrFail($this->googleAccountId);
             $service = new GoogleDriveService($account);
 
-            $result = $service->getFolders($this->currentFolderId);
+            $result = $service->getFolderContentsWithFiles($this->currentFolderId);
+
             $this->folders = collect($result['folders'])->map(fn ($folder) => [
                 'id' => $folder->getId(),
                 'name' => $folder->getName(),
+                'mimeType' => $folder->getMimeType(),
+            ])->toArray();
+
+            $this->files = collect($result['files'])->map(fn ($file) => [
+                'id' => $file->getId(),
+                'name' => $file->getName(),
+                'mimeType' => $file->getMimeType(),
+                'size' => $file->getSize(),
             ])->toArray();
         } catch (\Exception $e) {
-            $this->error = 'Failed to load folders: '.$e->getMessage();
+            $this->error = 'Failed to load contents: '.$e->getMessage();
             $this->folders = [];
+            $this->files = [];
+            logger()->error('Google Drive folder picker error', [
+                'account_id' => $this->googleAccountId,
+                'folder_id' => $this->currentFolderId,
+                'error' => $e->getMessage(),
+            ]);
         } finally {
             $this->loading = false;
         }
     }
 
-    public function navigateToFolder(string $folderId, string $folderName): void
+    public function openFolder(string $folderId, string $folderName): void
     {
         $this->currentFolderId = $folderId;
+        $this->currentFolderName = $folderName;
         $this->breadcrumbs[] = ['id' => $folderId, 'name' => $folderName];
-        $this->loadFolders();
+        $this->loadContents();
     }
 
     public function navigateToBreadcrumb(int $index): void
     {
         $this->breadcrumbs = array_slice($this->breadcrumbs, 0, $index + 1);
-        $this->currentFolderId = $this->breadcrumbs[$index]['id'];
-        $this->loadFolders();
+        $breadcrumb = $this->breadcrumbs[$index];
+        $this->currentFolderId = $breadcrumb['id'];
+        $this->currentFolderName = $breadcrumb['name'];
+        $this->loadContents();
+    }
+
+    public function selectCurrentFolder(): void
+    {
+        $this->dispatch('folder-selected', folderId: $this->currentFolderId, folderName: $this->currentFolderName);
     }
 
     public function selectFolder(string $folderId, string $folderName): void
     {
         $this->dispatch('folder-selected', folderId: $folderId, folderName: $folderName);
+    }
+
+    public function formatFileSize($bytes): string
+    {
+        if (! $bytes) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= (1 << (10 * $pow));
+
+        return round($bytes, 2).' '.$units[$pow];
     }
 
     public function render()

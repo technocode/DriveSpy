@@ -148,6 +148,41 @@ class GoogleDriveService
         ];
     }
 
+    public function getFolderContentsWithFiles(string $folderId = 'root', ?string $pageToken = null): array
+    {
+        $parameters = [
+            'q' => "'{$folderId}' in parents and trashed=false",
+            'fields' => 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink)',
+            'pageSize' => 100,
+            'orderBy' => 'folder,name',
+        ];
+
+        if ($pageToken) {
+            $parameters['pageToken'] = $pageToken;
+        }
+
+        $results = $this->driveService->files->listFiles($parameters);
+        $items = $results->getFiles();
+
+        // Separate folders and files
+        $folders = [];
+        $files = [];
+
+        foreach ($items as $item) {
+            if ($this->isFolder($item)) {
+                $folders[] = $item;
+            } else {
+                $files[] = $item;
+            }
+        }
+
+        return [
+            'folders' => $folders,
+            'files' => $files,
+            'nextPageToken' => $results->getNextPageToken(),
+        ];
+    }
+
     public function isFolder(DriveFile $file): bool
     {
         return $file->getMimeType() === 'application/vnd.google-apps.folder';

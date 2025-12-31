@@ -10,7 +10,9 @@ use Google\Service\Drive\DriveFile;
 class GoogleDriveService
 {
     private Client $client;
+
     private Drive $driveService;
+
     private GoogleAccount $googleAccount;
 
     public function __construct(GoogleAccount $googleAccount)
@@ -22,7 +24,7 @@ class GoogleDriveService
 
     private function initializeClient(): Client
     {
-        $client = new Client();
+        $client = new Client;
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setAccessToken([
@@ -75,7 +77,7 @@ class GoogleDriveService
         $allFiles = [];
         $foldersToProcess = [$folderId];
 
-        while (!empty($foldersToProcess)) {
+        while (! empty($foldersToProcess)) {
             $currentFolder = array_shift($foldersToProcess);
             $pageToken = null;
 
@@ -106,7 +108,7 @@ class GoogleDriveService
 
     public function getChanges(?string $pageToken = null): array
     {
-        if (!$pageToken) {
+        if (! $pageToken) {
             $pageToken = $this->getStartPageToken();
         }
 
@@ -122,6 +124,27 @@ class GoogleDriveService
             'changes' => $results->getChanges(),
             'nextPageToken' => $results->getNextPageToken(),
             'newStartPageToken' => $results->getNewStartPageToken(),
+        ];
+    }
+
+    public function getFolders(string $folderId = 'root', ?string $pageToken = null): array
+    {
+        $parameters = [
+            'q' => "'{$folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false",
+            'fields' => 'nextPageToken, files(id, name, mimeType, modifiedTime)',
+            'pageSize' => 100,
+            'orderBy' => 'name',
+        ];
+
+        if ($pageToken) {
+            $parameters['pageToken'] = $pageToken;
+        }
+
+        $results = $this->driveService->files->listFiles($parameters);
+
+        return [
+            'folders' => $results->getFiles(),
+            'nextPageToken' => $results->getNextPageToken(),
         ];
     }
 

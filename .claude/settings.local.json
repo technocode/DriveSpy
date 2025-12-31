@@ -4,7 +4,10 @@
       "Bash(chmod:*)",
       "mcp__laravel-boost__get-absolute-url",
       "Bash(curl:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(php artisan:*)",
+      "Bash(vendor/bin/pint:*)",
+      "mcp__laravel-boost__search-docs"
     ]
   }
 }

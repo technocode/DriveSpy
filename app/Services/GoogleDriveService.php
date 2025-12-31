@@ -49,7 +49,7 @@ class GoogleDriveService
     {
         $parameters = [
             'q' => "'{$folderId}' in parents and trashed=false",
-            'fields' => 'nextPageToken, files(id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, starred, ownedByMe, owners, parents)',
+            'fields' => 'nextPageToken, files(id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, starred, ownedByMe, owners, parents, lastModifyingUser)',
             'pageSize' => 100,
         ];
 
@@ -68,8 +68,73 @@ class GoogleDriveService
     public function getFileMetadata(string $fileId): DriveFile
     {
         return $this->driveService->files->get($fileId, [
-            'fields' => 'id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, starred, ownedByMe, owners, parents, permissions',
+            'fields' => 'id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, trashedTime, starred, ownedByMe, owners, parents, permissions, lastModifyingUser',
         ]);
+    }
+
+    public function getFileRevisions(string $fileId): array
+    {
+        try {
+            $revisions = $this->driveService->revisions->listRevisions($fileId, [
+                'fields' => 'revisions(id, modifiedTime, lastModifyingUser(emailAddress, displayName))',
+                'pageSize' => 1, // Get only the latest revision
+            ]);
+
+            return $revisions->getRevisions() ?? [];
+        } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+
+            // Files like folders, images, PDFs don't support revisions - this is expected
+            if (str_contains($errorMessage, 'does not support revisions')) {
+                logger()->debug('File does not support revisions (expected for folders, images, etc.)', [
+                    'file_id' => $fileId,
+                ]);
+            } else {
+                // Log actual errors at warning level
+                logger()->warning('Failed to get file revisions', [
+                    'file_id' => $fileId,
+                    'error' => $errorMessage,
+                ]);
+            }
+
+            return [];
+        }
+    }
+
+    public function getLastModifier(string $fileId): ?array
+    {
+        $revisions = $this->getFileRevisions($fileId);
+
+        if (empty($revisions)) {
+            // Fallback: try to get from file metadata
+            try {
+                $file = $this->getFileMetadata($fileId);
+                $lastModifyingUser = $file->getLastModifyingUser();
+
+                if ($lastModifyingUser) {
+                    return [
+                        'email' => $lastModifyingUser->getEmailAddress(),
+                        'name' => $lastModifyingUser->getDisplayName(),
+                    ];
+                }
+            } catch (\Exception $e) {
+                // Ignore errors
+            }
+
+            return null;
+        }
+
+        $latestRevision = $revisions[0];
+        $lastModifyingUser = $latestRevision->getLastModifyingUser();
+
+        if ($lastModifyingUser) {
+            return [
+                'email' => $lastModifyingUser->getEmailAddress(),
+                'name' => $lastModifyingUser->getDisplayName(),
+            ];
+        }
+
+        return null;
     }
 
     public function listAllFilesRecursively(string $folderId): array
@@ -112,11 +177,23 @@ class GoogleDriveService
             $pageToken = $this->getStartPageToken();
         }
 
+        // Google Drive API v3 requires explicit field specification
+        // Include all fields we need, especially 'parents' which is critical for hierarchy
+        $fields = 'nextPageToken, newStartPageToken, changes(fileId, removed, changeType, time, file(id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, starred, ownedByMe, owners, parents, lastModifyingUser, webViewLink, iconLink, hasThumbnail, thumbnailLink, shared, capabilities, permissions, spaces, version, webContentLink, headRevisionId, quotaBytesUsed, isAppAuthorized, description, explicitlyTrashed, teamDriveId, driveId))';
+
         $parameters = [
             'pageToken' => $pageToken,
-            'fields' => 'nextPageToken, newStartPageToken, changes(fileId, removed, file(id, name, mimeType, size, md5Checksum, modifiedTime, createdTime, trashed, starred, ownedByMe, owners, parents))',
+            'fields' => $fields,
             'pageSize' => 100,
+            'includeItemsFromAllDrives' => true,
+            'supportsAllDrives' => true,
         ];
+
+        logger()->info('Google Drive Changes API Request', [
+            'page_token' => $pageToken,
+            'fields_requested' => $fields,
+            'parameters' => $parameters,
+        ]);
 
         $results = $this->driveService->changes->listChanges($parameters);
 

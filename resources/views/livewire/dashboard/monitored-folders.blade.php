@@ -18,8 +18,7 @@
 
     {{-- Add Folder Button --}}
     <div class="mb-6">
-        <flux:button variant="primary" wire:click="openCreateModal">
-            <flux:icon name="plus" class="w-4 h-4 mr-2" />
+        <flux:button variant="primary" wire:click="openCreateModal" icon="plus">
             {{ __('Monitor New Folder') }}
         </flux:button>
     </div>
@@ -100,22 +99,84 @@
 
                     {{-- Actions --}}
                     <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <flux:button
-                            size="sm"
-                            wire:click="openEditModal({{ $folder->id }})"
-                            class="flex-1"
-                        >
-                            {{ __('Edit Settings') }}
-                        </flux:button>
-                        <flux:button
-                            variant="danger"
-                            size="sm"
-                            wire:click="delete({{ $folder->id }})"
-                            wire:confirm="Are you sure? This will stop monitoring this folder and remove all tracked data."
-                            class="flex-1"
-                        >
-                            {{ __('Stop Monitoring') }}
-                        </flux:button>
+                        @if ($folder->last_indexed_at === null && $folder->status !== 'indexing')
+                            <flux:button
+                                variant="primary"
+                                size="sm"
+                                wire:click="startInitialIndex({{ $folder->id }})"
+                                wire:confirm="This will scan all files in this folder. This may take a while for large folders. Continue?"
+                                class="flex-1"
+                            >
+                                <flux:icon name="arrow-path" class="w-4 h-4 mr-2" />
+                                {{ __('Start Indexing') }}
+                            </flux:button>
+                        @elseif ($folder->status === 'indexing')
+                            <div class="flex-1 flex items-center justify-center text-sm text-blue-600 dark:text-blue-400">
+                                <flux:icon name="arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                                {{ __('Indexing in progress...') }}
+                            </div>
+                        @else
+                            <flux:dropdown position="top" align="start">
+                                <flux:button
+                                    variant="primary"
+                                    size="sm"
+                                    icon="arrow-path"
+                                    icon-trailing="chevron-down"
+                                >
+                                    {{ __('Actions') }}
+                                </flux:button>
+
+                                <flux:menu class="!w-[180px]">
+                                    <flux:menu.radio.group>
+                                        <flux:menu.item 
+                                            as="button" 
+                                            wire:click="syncFolder({{ $folder->id }})"
+                                            icon="arrow-path"
+                                        >
+                                            {{ __('Quick Sync') }}
+                                        </flux:menu.item>
+                                        <flux:menu.item 
+                                            as="button" 
+                                            wire:click="fullSyncFolder({{ $folder->id }})"
+                                            wire:confirm="This will scan all files recursively in this folder. This may take a while for large folders. Continue?"
+                                            icon="magnifying-glass"
+                                        >
+                                            {{ __('Full Sync') }}
+                                        </flux:menu.item>
+                                        <flux:menu.item 
+                                            as="button" 
+                                            wire:click="openEditModal({{ $folder->id }})"
+                                            icon="cog"
+                                        >
+                                            {{ __('Edit Settings') }}
+                                        </flux:menu.item>
+                                    </flux:menu.radio.group>
+                                    <flux:menu.separator />
+                                    <flux:menu.radio.group>
+                                        <flux:menu.item 
+                                            as="button" 
+                                            wire:click="delete({{ $folder->id }})"
+                                            wire:confirm="Are you sure? This will stop monitoring this folder and remove all tracked data."
+                                            icon="trash"
+                                            class="!text-red-600 dark:!text-red-400"
+                                        >
+                                            {{ __('Stop Monitoring') }}
+                                        </flux:menu.item>
+                                    </flux:menu.radio.group>
+                                </flux:menu>
+                            </flux:dropdown>
+                        @endif
+                        @if ($folder->last_indexed_at === null || $folder->status === 'indexing')
+                            <flux:button
+                                variant="danger"
+                                size="sm"
+                                wire:click="delete({{ $folder->id }})"
+                                wire:confirm="Are you sure? This will stop monitoring this folder and remove all tracked data."
+                                class="flex-1"
+                            >
+                                {{ __('Stop Monitoring') }}
+                            </flux:button>
+                        @endif
                     </div>
                 </div>
             @endforeach

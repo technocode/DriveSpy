@@ -5,7 +5,10 @@ namespace App\Livewire\Settings;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
+
+#[Layout('components.layouts.app.sidebar')]
 
 class Password extends Component
 {

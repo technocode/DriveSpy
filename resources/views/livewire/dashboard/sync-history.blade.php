@@ -103,7 +103,7 @@
                                             {{ $syncRun->googleAccount->email }}
                                         </flux:text>
                                         <flux:text class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                            {{ $syncRun->monitoredFolder->root_name }}
+                                            {{ $syncRun->monitoredFolder?->root_name ?? __('All Folders') }}
                                         </flux:text>
                                     </div>
                                 </td>
@@ -173,7 +173,7 @@
             <div class="mb-4">
                 <flux:heading>{{ __('Sync Events') }}</flux:heading>
                 <flux:text class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ $selectedSyncRun->googleAccount->email }} - {{ $selectedSyncRun->monitoredFolder->root_name }}
+                    {{ $selectedSyncRun->googleAccount->email }} - {{ $selectedSyncRun->monitoredFolder?->root_name ?? __('All Folders') }}
                 </flux:text>
             </div>
 

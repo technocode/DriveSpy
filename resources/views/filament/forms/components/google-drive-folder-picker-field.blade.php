@@ -28,25 +28,28 @@
             </h3>
         </div>
 
-        <div x-show="googleAccountId">
-            <div :key="'picker-' + googleAccountId + '-' + pickerKey">
-                <div
-                    x-data="{
-                        mounted: false
-                    }"
-                    x-init="
-                        $nextTick(() => {
-                            if (!mounted && googleAccountId) {
-                                mounted = true;
+        <div x-show="googleAccountId" x-cloak>
+            <div 
+                x-data="{
+                    init() {
+                        if (googleAccountId) {
+                            this.$nextTick(() => {
                                 Livewire.dispatch('mountPicker', { accountId: googleAccountId });
-                            }
-                        })
-                    "
-                    wire:ignore
-                    :id="'folder-picker-container-' + googleAccountId"
-                >
-                    @livewire('google-drive-folder-picker', key('folder-picker'))
-                </div>
+                            });
+                        }
+                    }
+                }"
+                wire:key="picker-wrapper-{{ $get('google_account_id') ?? 'none' }}"
+            >
+                @php
+                    $accountId = $get('google_account_id') ?? null;
+                @endphp
+                @if($accountId)
+                    <livewire:google-drive-folder-picker 
+                        :googleAccountId="$accountId" 
+                        :key="'folder-picker-' . $accountId" 
+                    />
+                @endif
             </div>
         </div>
 

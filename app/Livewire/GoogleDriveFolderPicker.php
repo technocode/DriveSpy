@@ -35,10 +35,17 @@ class GoogleDriveFolderPicker extends Component
         }
     }
 
-    public function handleMountPicker($data): void
+    public function handleMountPicker($data = null): void
     {
-        if (isset($data['accountId'])) {
+        if (is_array($data) && isset($data['accountId'])) {
             $this->googleAccountId = $data['accountId'];
+            $this->reset(['currentFolderId', 'breadcrumbs', 'folders', 'files', 'error']);
+            $this->currentFolderId = 'root';
+            $this->currentFolderName = 'My Drive';
+            $this->initializeBreadcrumbs();
+            $this->loadContents();
+        } elseif (is_int($data)) {
+            $this->googleAccountId = $data;
             $this->reset(['currentFolderId', 'breadcrumbs', 'folders', 'files', 'error']);
             $this->currentFolderId = 'root';
             $this->currentFolderName = 'My Drive';

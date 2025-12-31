@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\GoogleOAuthController;
+use App\Livewire\Dashboard\Activity;
 use App\Livewire\Dashboard\Dashboard;
+use App\Livewire\Dashboard\Documentation;
 use App\Livewire\Dashboard\Files;
 use App\Livewire\Dashboard\GoogleAccounts;
 use App\Livewire\Dashboard\MonitoredFolders;
@@ -33,6 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('monitored-folders', MonitoredFolders::class)->name('monitored-folders');
         Route::get('files', Files::class)->name('files');
         Route::get('sync-history', SyncHistory::class)->name('sync-history');
+        Route::get('activity', Activity::class)->name('activity');
+        Route::get('documentation', Documentation::class)->name('documentation');
     });
 
     Route::redirect('settings', 'dashboard/settings/profile');

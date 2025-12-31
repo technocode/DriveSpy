@@ -18,6 +18,7 @@
                     <flux:navlist.item icon="folder" :href="route('dashboard.monitored-folders')" :current="request()->routeIs('dashboard.monitored-folders')" wire:navigate>{{ __('Monitored Folders') }}</flux:navlist.item>
                     <flux:navlist.item icon="document" :href="route('dashboard.files')" :current="request()->routeIs('dashboard.files')" wire:navigate>{{ __('Files') }}</flux:navlist.item>
                     <flux:navlist.item icon="clock" :href="route('dashboard.sync-history')" :current="request()->routeIs('dashboard.sync-history')" wire:navigate>{{ __('Sync History') }}</flux:navlist.item>
+                    <flux:navlist.item icon="bell" :href="route('dashboard.activity')" :current="request()->routeIs('dashboard.activity')" wire:navigate>{{ __('Activity Log') }}</flux:navlist.item>
                 </flux:navlist.group>
 
                 @if (auth()->user()->is_admin)
@@ -30,11 +31,7 @@
             <flux:spacer />
 
             <flux:navlist variant="outline">
-                <flux:navlist.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                {{ __('Repository') }}
-                </flux:navlist.item>
-
-                <flux:navlist.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
+                <flux:navlist.item icon="book-open-text" :href="route('dashboard.documentation')" :current="request()->routeIs('dashboard.documentation')" wire:navigate>
                 {{ __('Documentation') }}
                 </flux:navlist.item>
             </flux:navlist>

@@ -2,6 +2,9 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Jobs\FullSyncJob;
+use App\Jobs\InitialIndexJob;
+use App\Jobs\SyncChangesJob;
 use App\Models\GoogleAccount;
 use App\Models\MonitoredFolder;
 use Livewire\Attributes\Layout;
@@ -79,15 +82,17 @@ class MonitoredFolders extends Component
             return;
         }
 
-        MonitoredFolder::create([
+        $folder = MonitoredFolder::create([
             'google_account_id' => $this->selectedAccountId,
             'root_drive_file_id' => $this->selectedFolderId,
             'root_name' => $this->selectedFolderName,
             'include_subfolders' => $this->includeSubfolders,
-            'status' => 'active',
+            'status' => 'indexing',
         ]);
 
-        session()->flash('success', 'Folder monitoring started successfully!');
+        InitialIndexJob::dispatch($folder);
+
+        session()->flash('success', 'Folder monitoring started! Initial indexing has been queued and will begin shortly.');
         $this->closeCreateModal();
         $this->resetPage();
     }
@@ -122,6 +127,60 @@ class MonitoredFolders extends Component
 
         session()->flash('success', 'Folder settings updated successfully!');
         $this->closeEditModal();
+    }
+
+    public function startInitialIndex(MonitoredFolder $folder): void
+    {
+        $this->authorize('view', $folder->googleAccount);
+
+        if ($folder->last_indexed_at !== null) {
+            session()->flash('error', 'This folder has already been indexed. Use reindex to scan again.');
+
+            return;
+        }
+
+        if ($folder->status === 'indexing') {
+            session()->flash('error', 'Initial indexing is already in progress for this folder.');
+
+            return;
+        }
+
+        $folder->update(['status' => 'indexing']);
+        InitialIndexJob::dispatch($folder);
+
+        session()->flash('success', 'Initial indexing has been queued! Files will appear once the indexing completes.');
+    }
+
+    public function syncFolder(MonitoredFolder $folder): void
+    {
+        $this->authorize('view', $folder->googleAccount);
+
+        if (! $folder->last_indexed_at) {
+            session()->flash('error', 'Please run initial indexing first before syncing changes.');
+
+            return;
+        }
+
+        SyncChangesJob::dispatch($folder->googleAccount);
+
+        session()->flash('success', 'Incremental sync has been queued! Changes will be detected and logged shortly.');
+    }
+
+    public function fullSyncFolder(MonitoredFolder $folder): void
+    {
+        $this->authorize('view', $folder->googleAccount);
+
+        if (! $folder->last_indexed_at) {
+            session()->flash('error', 'Please run initial indexing first before doing a full sync.');
+
+            return;
+        }
+
+        FullSyncJob::dispatch($folder);
+
+        $folder->update(['status' => 'syncing']);
+
+        session()->flash('success', 'Full sync has been queued! This will scan all files recursively and may take a while for large folders.');
     }
 
     public function delete(MonitoredFolder $folder): void

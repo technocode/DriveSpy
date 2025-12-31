@@ -97,7 +97,10 @@ class SyncHistory extends Component
             : auth()->user()->monitoredFolders()->get();
 
         $events = $this->selectedSyncRun
-            ? DriveEvent::where('monitored_folder_id', $this->selectedSyncRun->monitored_folder_id)
+            ? DriveEvent::where('google_account_id', $this->selectedSyncRun->google_account_id)
+                ->when($this->selectedSyncRun->monitored_folder_id, function ($query, $folderId) {
+                    $query->where('monitored_folder_id', $folderId);
+                })
                 ->whereBetween('occurred_at', [
                     $this->selectedSyncRun->started_at,
                     $this->selectedSyncRun->finished_at ?? now(),

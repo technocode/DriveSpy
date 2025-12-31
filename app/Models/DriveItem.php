@@ -29,6 +29,10 @@ class DriveItem extends Model
         'starred',
         'owned_by_me',
         'owners_json',
+        'owner_email',
+        'owner_name',
+        'last_modifier_email',
+        'last_modifier_name',
         'permissions_json',
         'last_seen_at',
     ];

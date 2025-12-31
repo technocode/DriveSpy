@@ -1,12 +1,12 @@
 <x-dashboard.layout :heading="__('Files')" :subheading="__('Browse files from your monitored Google Drive folders')">
     {{-- Filters --}}
     <div class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             {{-- Search --}}
             <div>
                 <flux:input
                     wire:model.live.debounce.300ms="search"
-                    :placeholder="__('Search files...')"
+                    :placeholder="__('Search files and paths...')"
                     type="search"
                 />
             </div>
@@ -30,19 +30,10 @@
                     @endforeach
                 </flux:select>
             </div>
-
-            {{-- Type Filter --}}
-            <div>
-                <flux:select wire:model.live="filterType">
-                    <option value="all">{{ __('All items') }}</option>
-                    <option value="folders">{{ __('Folders only') }}</option>
-                    <option value="files">{{ __('Files only') }}</option>
-                </flux:select>
-            </div>
         </div>
 
         {{-- Clear Filters --}}
-        @if ($search || $filterAccountId || $filterFolderId || $filterType !== 'all')
+        @if ($search || $filterAccountId || $filterFolderId)
             <div class="mt-3">
                 <flux:button size="sm" variant="ghost" wire:click="clearFilters">
                     {{ __('Clear all filters') }}
@@ -57,7 +48,7 @@
             <flux:icon name="document" variant="outline" class="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
             <flux:heading class="mb-2">{{ __('No Files Found') }}</flux:heading>
             <flux:text class="text-gray-600 dark:text-gray-400">
-                @if ($search || $filterAccountId || $filterFolderId || $filterType !== 'all')
+                @if ($search || $filterAccountId || $filterFolderId)
                     {{ __('Try adjusting your filters or search query.') }}
                 @else
                     {{ __('Start monitoring folders to see files here.') }}
@@ -72,17 +63,22 @@
                         <tr>
                             <th class="px-4 py-3 text-left">
                                 <flux:text class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                                    {{ __('Name') }}
+                                    {{ __('Name / Path') }}
                                 </flux:text>
                             </th>
                             <th class="px-4 py-3 text-left hidden md:table-cell">
                                 <flux:text class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                                    {{ __('Account / Folder') }}
+                                    {{ __('Account') }}
                                 </flux:text>
                             </th>
                             <th class="px-4 py-3 text-left hidden lg:table-cell">
                                 <flux:text class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                                     {{ __('Size') }}
+                                </flux:text>
+                            </th>
+                            <th class="px-4 py-3 text-left hidden lg:table-cell">
+                                <flux:text class="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                                    {{ __('Owner') }}
                                 </flux:text>
                             </th>
                             <th class="px-4 py-3 text-left hidden lg:table-cell">
@@ -94,41 +90,50 @@
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                         @foreach ($items as $item)
+                            @php
+                                // Extract directory path without filename
+                                $directoryPath = $item->path_cache ? dirname($item->path_cache) : '/';
+                                $directoryPath = $directoryPath === '.' ? '/' : $directoryPath;
+                            @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
-                                        @if ($item->is_folder)
-                                            <flux:icon name="folder" class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0" />
-                                        @else
-                                            <flux:icon name="document" class="w-5 h-5 text-gray-400 flex-shrink-0" />
-                                        @endif
+                                        <flux:icon name="document" class="w-5 h-5 text-gray-400 flex-shrink-0" />
                                         <div class="flex-1 min-w-0">
                                             <flux:text class="font-medium text-gray-900 dark:text-gray-100 truncate">
                                                 {{ $item->name }}
                                             </flux:text>
-                                            {{-- Mobile: Show account/folder --}}
-                                            <div class="md:hidden">
-                                                <flux:text class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                                    {{ $item->googleAccount->email }} / {{ $item->monitoredFolder->root_name }}
-                                                </flux:text>
-                                            </div>
+                                            <flux:text class="text-xs text-gray-500 dark:text-gray-400 font-mono truncate block" title="{{ $directoryPath }}">
+                                                {{ $directoryPath }}
+                                            </flux:text>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3 hidden md:table-cell">
-                                    <div>
-                                        <flux:text class="text-sm text-gray-900 dark:text-gray-100 truncate">
-                                            {{ $item->googleAccount->email }}
-                                        </flux:text>
-                                        <flux:text class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                                            {{ $item->monitoredFolder->root_name }}
-                                        </flux:text>
-                                    </div>
+                                    <flux:text class="text-sm text-gray-600 dark:text-gray-400 truncate">
+                                        {{ $item->googleAccount->email }}
+                                    </flux:text>
                                 </td>
                                 <td class="px-4 py-3 hidden lg:table-cell">
                                     <flux:text class="text-sm text-gray-600 dark:text-gray-400">
-                                        {{ $item->is_folder ? '—' : $this->formatFileSize($item->size_bytes) }}
+                                        {{ $this->formatFileSize($item->size_bytes) }}
                                     </flux:text>
+                                </td>
+                                <td class="px-4 py-3 hidden lg:table-cell">
+                                    <div>
+                                        @if ($item->owner_name || $item->owner_email)
+                                            <flux:text class="text-sm text-gray-900 dark:text-gray-100">
+                                                {{ $item->owner_name ?? $item->owner_email }}
+                                            </flux:text>
+                                            @if ($item->last_modifier_name || $item->last_modifier_email)
+                                                <flux:text class="text-xs text-gray-500 dark:text-gray-400 block">
+                                                    {{ __('Modified by:') }} {{ $item->last_modifier_name ?? $item->last_modifier_email }}
+                                                </flux:text>
+                                            @endif
+                                        @else
+                                            <flux:text class="text-sm text-gray-400">—</flux:text>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 hidden lg:table-cell">
                                     <flux:text class="text-sm text-gray-600 dark:text-gray-400">

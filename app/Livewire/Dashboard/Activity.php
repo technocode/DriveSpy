@@ -9,18 +9,21 @@ use Livewire\WithPagination;
 
 #[Layout('components.layouts.app.sidebar')]
 
-class Files extends Component
+class Activity extends Component
 {
     use WithPagination;
-
-    #[Url(as: 'q')]
-    public string $search = '';
 
     #[Url(as: 'account')]
     public ?int $filterAccountId = null;
 
     #[Url(as: 'folder')]
     public ?int $filterFolderId = null;
+
+    #[Url(as: 'type')]
+    public string $filterEventType = 'all';
+
+    #[Url(as: 'q')]
+    public string $search = '';
 
     public function updatingSearch(): void
     {
@@ -38,41 +41,22 @@ class Files extends Component
         $this->resetPage();
     }
 
-    public function clearFilters(): void
+    public function updatingFilterEventType(): void
     {
-        $this->reset(['search', 'filterAccountId', 'filterFolderId']);
         $this->resetPage();
     }
 
-    public function formatFileSize($bytes): string
+    public function clearFilters(): void
     {
-        if (! $bytes) {
-            return '0 B';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= (1 << (10 * $pow));
-
-        return round($bytes, 2).' '.$units[$pow];
+        $this->reset(['search', 'filterAccountId', 'filterFolderId', 'filterEventType']);
+        $this->resetPage();
     }
 
     public function render()
     {
         $query = auth()->user()
-            ->driveItems()
-            ->with(['googleAccount', 'monitoredFolder'])
-            ->where('trashed', false)
-            ->where('is_folder', false);
-
-        if ($this->search) {
-            $query->where(function ($q) {
-                $q->where('name', 'like', '%'.$this->search.'%')
-                    ->orWhere('path_cache', 'like', '%'.$this->search.'%');
-            });
-        }
+            ->driveEvents()
+            ->with(['googleAccount', 'monitoredFolder']);
 
         if ($this->filterAccountId) {
             $query->where('google_account_id', $this->filterAccountId);
@@ -82,8 +66,20 @@ class Files extends Component
             $query->where('monitored_folder_id', $this->filterFolderId);
         }
 
-        $items = $query
-            ->latest('modified_time')
+        if ($this->filterEventType !== 'all') {
+            $query->where('event_type', $this->filterEventType);
+        }
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('summary', 'like', '%'.$this->search.'%')
+                    ->orWhere('drive_file_id', 'like', '%'.$this->search.'%')
+                    ->orWhere('actor_email', 'like', '%'.$this->search.'%');
+            });
+        }
+
+        $events = $query
+            ->latest('updated_at')
             ->paginate(20);
 
         $googleAccounts = auth()->user()->googleAccounts()->get();
@@ -92,10 +88,23 @@ class Files extends Component
             ? auth()->user()->monitoredFolders()->where('google_account_id', $this->filterAccountId)->get()
             : auth()->user()->monitoredFolders()->get();
 
-        return view('livewire.dashboard.files', [
-            'items' => $items,
+        $eventTypes = [
+            'all' => 'All Events',
+            'created' => 'Created',
+            'updated' => 'Updated',
+            'deleted' => 'Deleted',
+            'trashed' => 'Trashed',
+            'restored' => 'Restored',
+            'renamed' => 'Renamed',
+            'moved' => 'Moved',
+            'metadata_changed' => 'Metadata Changed',
+        ];
+
+        return view('livewire.dashboard.activity', [
+            'events' => $events,
             'googleAccounts' => $googleAccounts,
             'monitoredFolders' => $monitoredFolders,
+            'eventTypes' => $eventTypes,
         ]);
     }
 }

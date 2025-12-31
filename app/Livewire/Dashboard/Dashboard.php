@@ -26,12 +26,19 @@ class Dashboard extends Component
             ->limit(10)
             ->get();
 
+        $recentEvents = $user->driveEvents()
+            ->with(['googleAccount', 'monitoredFolder'])
+            ->latest('occurred_at')
+            ->limit(10)
+            ->get();
+
         return view('livewire.dashboard.dashboard', [
             'googleAccountsCount' => $googleAccountsCount,
             'monitoredFoldersCount' => $monitoredFoldersCount,
             'driveItemsCount' => $driveItemsCount,
             'recentSyncsCount' => $recentSyncsCount,
             'recentSyncs' => $recentSyncs,
+            'recentEvents' => $recentEvents,
         ]);
     }
 }

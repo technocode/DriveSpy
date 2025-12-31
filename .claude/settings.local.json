@@ -7,7 +7,15 @@
       "Bash(ls:*)",
       "Bash(php artisan:*)",
       "Bash(vendor/bin/pint:*)",
-      "mcp__laravel-boost__search-docs"
+      "mcp__laravel-boost__search-docs",
+      "mcp__laravel-boost__application-info",
+      "mcp__laravel-boost__database-schema",
+      "mcp__laravel-boost__list-routes",
+      "mcp__laravel-boost__tinker",
+      "mcp__laravel-boost__last-error",
+      "mcp__laravel-boost__browser-logs",
+      "mcp__laravel-boost__read-log-entries",
+      "Bash(composer dump-autoload:*)"
     ]
   }
 }

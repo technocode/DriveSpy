@@ -1,20 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a73e8;stop-opacity:1" />
-    </linearGradient>
-  </defs>
-
-  <!-- Drive folder -->
-  <path d="M 6 14 L 26 14 L 30 18 L 58 18 L 58 54 L 6 54 Z" fill="url(#folderGrad)" rx="2"/>
-  <path d="M 6 14 L 26 14 L 30 18 L 58 18 L 58 22 L 6 22 Z" fill="#5a9cf8" opacity="0.9"/>
-
-  <!-- Magnifying glass (spy element) -->
-  <circle cx="44" cy="38" r="10" fill="none" stroke="#fff" stroke-width="3.5"/>
-  <circle cx="44" cy="38" r="6.5" fill="rgba(255,255,255,0.25)"/>
-  <line x1="51" y1="45" x2="57.5" y2="51.5" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
-
-  <!-- Small dot in magnifying glass for detail -->
-  <circle cx="44" cy="38" r="2" fill="#fff" opacity="0.6"/>
+    {{-- Background with gradient --}}
+    <defs>
+        <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#34A853;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="12" fill="url(#grad)"/>
+    
+    {{-- Folder icon --}}
+    <path 
+        fill="white" 
+        fill-opacity="0.95"
+        d="M16 20C14.8954 20 14 20.8954 14 22V46C14 47.1046 14.8954 48 16 48H48C49.1046 48 50 47.1046 50 46V30C50 28.8954 49.1046 28 48 28H32L28 20H16Z"
+    />
+    
+    {{-- Eye icon overlay --}}
+    <circle cx="32" cy="34" r="6" fill="none" stroke="white" stroke-width="2" opacity="0.9"/>
+    <circle cx="32" cy="34" r="3" fill="white" opacity="0.9"/>
+    <ellipse cx="32" cy="34" rx="10" ry="6" fill="none" stroke="white" stroke-width="1.5" opacity="0.4"/>
 </svg>

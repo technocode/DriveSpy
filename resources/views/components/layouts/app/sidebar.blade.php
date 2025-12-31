@@ -12,9 +12,19 @@
             </a>
 
             <flux:navlist variant="outline">
-                <flux:navlist.group :heading="__('Platform')" class="grid">
-                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                <flux:navlist.group :heading="__('Dashboard')" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>{{ __('Overview') }}</flux:navlist.item>
+                    <flux:navlist.item icon="user-group" :href="route('dashboard.google-accounts')" :current="request()->routeIs('dashboard.google-accounts')" wire:navigate>{{ __('Google Accounts') }}</flux:navlist.item>
+                    <flux:navlist.item icon="folder" :href="route('dashboard.monitored-folders')" :current="request()->routeIs('dashboard.monitored-folders')" wire:navigate>{{ __('Monitored Folders') }}</flux:navlist.item>
+                    <flux:navlist.item icon="document" :href="route('dashboard.files')" :current="request()->routeIs('dashboard.files')" wire:navigate>{{ __('Files') }}</flux:navlist.item>
+                    <flux:navlist.item icon="clock" :href="route('dashboard.sync-history')" :current="request()->routeIs('dashboard.sync-history')" wire:navigate>{{ __('Sync History') }}</flux:navlist.item>
                 </flux:navlist.group>
+
+                @if (auth()->user()->is_admin)
+                    <flux:navlist.group :heading="__('Admin')" class="grid">
+                        <flux:navlist.item icon="cog-6-tooth" href="/admin" target="_blank">{{ __('Admin Panel') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                @endif
             </flux:navlist>
 
             <flux:spacer />
@@ -60,7 +70,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -110,7 +120,7 @@
                     <flux:menu.separator />
 
                     <flux:menu.radio.group>
-                        <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
+                        <flux:menu.item :href="route('settings.profile')" icon="cog" wire:navigate>{{ __('Settings') }}</flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />
@@ -125,7 +135,9 @@
             </flux:dropdown>
         </flux:header>
 
-        {{ $slot }}
+        <flux:main>
+            {{ $slot }}
+        </flux:main>
 
         @fluxScripts
     </body>

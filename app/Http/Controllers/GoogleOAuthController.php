@@ -23,8 +23,12 @@ class GoogleOAuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        $redirectRoute = auth()->user()?->is_admin
+            ? 'filament.admin.resources.google-accounts.index'
+            : 'dashboard.google-accounts';
+
         if ($request->has('error')) {
-            return redirect()->route('filament.admin.resources.google-accounts.index')
+            return redirect()->route($redirectRoute)
                 ->with('error', 'Google authentication cancelled or failed');
         }
 
@@ -35,8 +39,8 @@ class GoogleOAuthController extends Controller
             $token = $client->fetchAccessTokenWithAuthCode($code);
 
             if (isset($token['error'])) {
-                return redirect()->route('filament.admin.resources.google-accounts.index')
-                    ->with('error', 'Failed to authenticate: ' . ($token['error_description'] ?? $token['error']));
+                return redirect()->route($redirectRoute)
+                    ->with('error', 'Failed to authenticate: '.($token['error_description'] ?? $token['error']));
             }
 
             $client->setAccessToken($token);
@@ -69,21 +73,21 @@ class GoogleOAuthController extends Controller
                 ]
             );
 
-            return redirect()->route('filament.admin.resources.google-accounts.index')
+            return redirect()->route($redirectRoute)
                 ->with('success', 'Google account connected successfully!');
         } catch (\Exception $e) {
-            \Log::error('Google OAuth callback error: ' . $e->getMessage(), [
+            \Log::error('Google OAuth callback error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->route('filament.admin.resources.google-accounts.index')
-                ->with('error', 'Failed to connect Google account: ' . $e->getMessage());
+            return redirect()->route($redirectRoute)
+                ->with('error', 'Failed to connect Google account: '.$e->getMessage());
         }
     }
 
     private function getGoogleClient(): Client
     {
-        $client = new Client();
+        $client = new Client;
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
         $client->setRedirectUri(config('services.google.redirect_uri'));

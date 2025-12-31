@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 42" {{ $attributes }}>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" {{ $attributes }}>
+    {{-- Folder icon --}}
     <path 
         fill="currentColor" 
-        fill-rule="evenodd" 
-        clip-rule="evenodd"
-        d="M17.2 5.633 8.6.855 0 5.633v26.51l16.2 9 16.2-9v-8.442l7.6-4.223V9.856l-8.6-4.777-8.6 4.777V18.3l-5.6 3.111V5.633ZM38 18.301l-5.6 3.11v-6.157l5.6-3.11V18.3Zm-1.06-7.856-5.54 3.078-5.54-3.079 5.54-3.078 5.54 3.079ZM24.8 18.3v-6.157l5.6 3.111v6.158L24.8 18.3Zm-1 1.732 5.54 3.078-13.14 7.302-5.54-3.078 13.14-7.3v-.002Zm-16.2 7.89 7.6 4.222V38.3L2 30.966V7.92l5.6 3.111v16.892ZM8.6 9.3 3.06 6.222 8.6 3.143l5.54 3.08L8.6 9.3Zm21.8 15.51-13.2 7.334V38.3l13.2-7.334v-6.156ZM9.6 11.034l5.6-3.11v14.6l-5.6 3.11v-14.6Z"
+        fill-rule="evenodd"
+        d="M10 12C9.44772 12 9 12.4477 9 13V28C9 28.5523 9.44772 29 10 29H30C30.5523 29 31 28.5523 31 28V15C31 14.4477 30.5523 14 30 14H20L18 12H10Z"
     />
+    {{-- Eye/spyglass overlay --}}
+    <circle cx="20" cy="20" r="5" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.85"/>
+    <circle cx="20" cy="20" r="2.5" fill="currentColor" opacity="0.9"/>
+    <ellipse cx="20" cy="20" rx="8" ry="5" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3"/>
 </svg>

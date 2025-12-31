@@ -6,6 +6,8 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -25,6 +27,7 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
     /**
@@ -49,6 +52,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
         ];
     }
 
@@ -64,8 +68,33 @@ class User extends Authenticatable implements FilamentUser
             ->implode('');
     }
 
+    public function googleAccounts(): HasMany
+    {
+        return $this->hasMany(GoogleAccount::class);
+    }
+
+    public function monitoredFolders(): HasManyThrough
+    {
+        return $this->hasManyThrough(MonitoredFolder::class, GoogleAccount::class);
+    }
+
+    public function driveItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(DriveItem::class, GoogleAccount::class);
+    }
+
+    public function syncRuns(): HasManyThrough
+    {
+        return $this->hasManyThrough(SyncRun::class, GoogleAccount::class);
+    }
+
+    public function driveEvents(): HasManyThrough
+    {
+        return $this->hasManyThrough(DriveEvent::class, GoogleAccount::class);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
-        return true;
+        return $this->is_admin;
     }
 }

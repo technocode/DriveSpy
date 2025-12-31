@@ -19,7 +19,7 @@ class ListGoogleAccounts extends ListRecords
                 ->label('Connect Google Account')
                 ->icon(Heroicon::OutlinedPlus)
                 ->color('primary')
-                ->url(route('google.redirect')),
+                ->url(route('google.oauth.redirect')),
             CreateAction::make()
                 ->label('Manual Entry')
                 ->visible(false),

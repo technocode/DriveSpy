@@ -16,13 +16,13 @@ Schedule::command('drivespy:auto-sync')
     ->name('sync-drive-changes')
     ->withoutOverlapping();
 
-// Run full sync daily at 2 AM for all active monitored folders
-Schedule::call(function () {
-    MonitoredFolder::where('status', 'active')
-        ->whereNotNull('last_indexed_at')
-        ->each(function ($folder) {
-            FullSyncJob::dispatch($folder);
-        });
-})->dailyAt('02:00')
-    ->name('full-sync-folders')
-    ->withoutOverlapping();
+// Full sync disabled - only using incremental sync
+// Schedule::call(function () {
+//     MonitoredFolder::where('status', 'active')
+//         ->whereNotNull('last_indexed_at')
+//         ->each(function ($folder) {
+//             FullSyncJob::dispatch($folder);
+//         });
+// })->dailyAt('02:00')
+//     ->name('full-sync-folders')
+//     ->withoutOverlapping();

@@ -1,8 +1,6 @@
 <?php
 
 use App\Jobs\FullSyncJob;
-use App\Jobs\SyncChangesJob;
-use App\Models\GoogleAccount;
 use App\Models\MonitoredFolder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -12,14 +10,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Run incremental sync every 10 minutes for active accounts
-Schedule::call(function () {
-    GoogleAccount::where('status', 'active')
-        ->whereNotNull('drive_start_page_token')
-        ->each(function ($account) {
-            SyncChangesJob::dispatch($account);
-        });
-})->everyTenMinutes()
+// Run incremental sync every minute for monitored folders
+Schedule::command('drivespy:auto-sync')
+    ->everyMinute()
     ->name('sync-drive-changes')
     ->withoutOverlapping();
 

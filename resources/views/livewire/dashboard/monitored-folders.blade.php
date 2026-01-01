@@ -128,23 +128,24 @@
 
                                 <flux:menu class="!w-[180px]">
                                     <flux:menu.radio.group>
-                                        <flux:menu.item 
-                                            as="button" 
+                                        <flux:menu.item
+                                            as="button"
                                             wire:click="syncFolder({{ $folder->id }})"
                                             icon="arrow-path"
                                         >
                                             {{ __('Quick Sync') }}
                                         </flux:menu.item>
-                                        <flux:menu.item 
-                                            as="button" 
+                                        {{-- Temporarily disabled Full Sync --}}
+                                        {{-- <flux:menu.item
+                                            as="button"
                                             wire:click="fullSyncFolder({{ $folder->id }})"
                                             wire:confirm="This will scan all files recursively in this folder. This may take a while for large folders. Continue?"
                                             icon="magnifying-glass"
                                         >
                                             {{ __('Full Sync') }}
-                                        </flux:menu.item>
-                                        <flux:menu.item 
-                                            as="button" 
+                                        </flux:menu.item> --}}
+                                        <flux:menu.item
+                                            as="button"
                                             wire:click="openEditModal({{ $folder->id }})"
                                             icon="cog"
                                         >

@@ -134,12 +134,19 @@ class SyncChangesJob implements ShouldQueue
                 ]);
             }
 
-            $this->syncRun->update([
-                'status' => 'success',
-                'finished_at' => now(),
-                'items_scanned' => $changesFetched,
-                'changes_fetched' => $changesFetched,
-            ]);
+            // Only save sync run if files were actually scanned
+            if ($changesFetched > 0) {
+                $this->syncRun->update([
+                    'status' => 'success',
+                    'finished_at' => now(),
+                    'items_scanned' => $changesFetched,
+                    'changes_fetched' => $changesFetched,
+                ]);
+            } else {
+                // Delete sync run if no changes detected
+                $this->syncRun->delete();
+                $this->syncRun = null;
+            }
 
         } catch (Throwable $e) {
             $this->syncRun->update([

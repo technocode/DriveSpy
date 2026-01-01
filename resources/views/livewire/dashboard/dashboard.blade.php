@@ -48,13 +48,13 @@
                             <div class="flex items-center gap-4">
                                 <div class="text-right">
                                     <flux:text class="text-sm">
-                                        {{ $sync->changes_count ?? 0 }} {{ __('changes') }}
+                                        {{ $sync->events_created ?? 0 }} {{ __('events') }}
                                     </flux:text>
                                     <flux:text class="text-xs text-gray-500 dark:text-gray-500">
                                         {{ $sync->created_at->diffForHumans() }}
                                     </flux:text>
                                 </div>
-                                @if ($sync->status === 'completed')
+                                @if ($sync->status === 'completed' || $sync->status === 'success')
                                     <flux:badge color="green" size="sm">{{ __('Completed') }}</flux:badge>
                                 @elseif ($sync->status === 'failed')
                                     <flux:badge color="red" size="sm">{{ __('Failed') }}</flux:badge>
@@ -143,6 +143,9 @@
                                 @endif
                                 <flux:text class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                     {{ $event->occurred_at->diffForHumans() }}
+                                    @if ($event->actor_name || $event->actor_email)
+                                        • {{ __('by') }} {{ $event->actor_name ?? $event->actor_email }}
+                                    @endif
                                 </flux:text>
                             </div>
                         </div>

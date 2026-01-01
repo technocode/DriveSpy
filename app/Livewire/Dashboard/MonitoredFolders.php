@@ -18,6 +18,8 @@ class MonitoredFolders extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'tailwind';
+
     public bool $showCreateModal = false;
 
     public bool $showEditModal = false;
@@ -161,7 +163,7 @@ class MonitoredFolders extends Component
             return;
         }
 
-        SyncChangesJob::dispatch($folder->googleAccount);
+        SyncChangesJob::dispatch($folder->googleAccount, $folder);
 
         session()->flash('success', 'Incremental sync has been queued! Changes will be detected and logged shortly.');
     }

@@ -13,6 +13,8 @@ class Files extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'tailwind';
+
     #[Url(as: 'q')]
     public string $search = '';
 
@@ -21,6 +23,12 @@ class Files extends Component
 
     #[Url(as: 'folder')]
     public ?int $filterFolderId = null;
+
+    #[Url(as: 'owner')]
+    public string $filterOwner = '';
+
+    #[Url(as: 'modified')]
+    public string $filterModifiedTime = 'all';
 
     public function updatingSearch(): void
     {
@@ -38,9 +46,19 @@ class Files extends Component
         $this->resetPage();
     }
 
+    public function updatingFilterOwner(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingFilterModifiedTime(): void
+    {
+        $this->resetPage();
+    }
+
     public function clearFilters(): void
     {
-        $this->reset(['search', 'filterAccountId', 'filterFolderId']);
+        $this->reset(['search', 'filterAccountId', 'filterFolderId', 'filterOwner', 'filterModifiedTime']);
         $this->resetPage();
     }
 
@@ -82,6 +100,24 @@ class Files extends Component
             $query->where('monitored_folder_id', $this->filterFolderId);
         }
 
+        if ($this->filterOwner) {
+            $query->where(function ($q) {
+                $q->where('owner_email', 'like', '%'.$this->filterOwner.'%')
+                    ->orWhere('owner_name', 'like', '%'.$this->filterOwner.'%');
+            });
+        }
+
+        if ($this->filterModifiedTime !== 'all') {
+            match ($this->filterModifiedTime) {
+                'today' => $query->whereDate('modified_time', today()),
+                'last_7_days' => $query->where('modified_time', '>=', now()->subDays(7)),
+                'last_30_days' => $query->where('modified_time', '>=', now()->subDays(30)),
+                'last_90_days' => $query->where('modified_time', '>=', now()->subDays(90)),
+                'last_year' => $query->where('modified_time', '>=', now()->subYear()),
+                default => null,
+            };
+        }
+
         $items = $query
             ->latest('modified_time')
             ->paginate(20);
@@ -92,10 +128,19 @@ class Files extends Component
             ? auth()->user()->monitoredFolders()->where('google_account_id', $this->filterAccountId)->get()
             : auth()->user()->monitoredFolders()->get();
 
+        $owners = auth()->user()
+            ->driveItems()
+            ->select('owner_email', 'owner_name')
+            ->whereNotNull('owner_email')
+            ->distinct()
+            ->orderBy('owner_email')
+            ->get();
+
         return view('livewire.dashboard.files', [
             'items' => $items,
             'googleAccounts' => $googleAccounts,
             'monitoredFolders' => $monitoredFolders,
+            'owners' => $owners,
         ]);
     }
 }

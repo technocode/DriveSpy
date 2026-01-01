@@ -13,6 +13,8 @@ class Activity extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'tailwind';
+
     #[Url(as: 'account')]
     public ?int $filterAccountId = null;
 

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\GoogleAccount;
+use App\Models\MonitoredFolder;
 use App\Models\SyncRun;
 use App\Services\GoogleDriveService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,7 +19,8 @@ class SyncChangesJob implements ShouldQueue
     private ?SyncRun $syncRun = null;
 
     public function __construct(
-        public GoogleAccount $googleAccount
+        public GoogleAccount $googleAccount,
+        public ?MonitoredFolder $monitoredFolder = null
     ) {}
 
     public function failed(?Throwable $exception): void
@@ -41,7 +43,7 @@ class SyncChangesJob implements ShouldQueue
     {
         $this->syncRun = SyncRun::create([
             'google_account_id' => $this->googleAccount->id,
-            'monitored_folder_id' => null,
+            'monitored_folder_id' => $this->monitoredFolder?->id,
             'run_type' => 'incremental_sync',
             'status' => 'running',
             'started_at' => now(),

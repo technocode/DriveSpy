@@ -14,6 +14,7 @@ class DriveEvent extends Model
     protected $fillable = [
         'google_account_id',
         'monitored_folder_id',
+        'sync_run_id',
         'drive_file_id',
         'event_type',
         'change_source',
@@ -42,5 +43,10 @@ class DriveEvent extends Model
     public function monitoredFolder(): BelongsTo
     {
         return $this->belongsTo(MonitoredFolder::class);
+    }
+
+    public function syncRun(): BelongsTo
+    {
+        return $this->belongsTo(SyncRun::class);
     }
 }

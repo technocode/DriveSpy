@@ -236,6 +236,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
         DriveEvent::create([
             'google_account_id' => $this->googleAccount->id,
             'monitored_folder_id' => $originalMonitoredFolderId,
+            'sync_run_id' => $this->syncRun->id,
             'drive_file_id' => $fileId,
             'event_type' => 'deleted',
             'change_source' => 'api_sync',
@@ -246,6 +247,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
             'after_json' => null,
             'summary' => "File '{$fileName}' was permanently deleted",
         ]);
+
+        $this->syncRun->increment('events_created');
     }
 
     private function handleDeletedOrTrashed($existingItem, $file, $monitoredFolder, GoogleDriveService $driveService): void
@@ -268,6 +271,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
             DriveEvent::create([
                 'google_account_id' => $this->googleAccount->id,
                 'monitored_folder_id' => $monitoredFolder?->id,
+                'sync_run_id' => $this->syncRun->id,
                 'drive_file_id' => $existingItem->drive_file_id,
                 'event_type' => 'trashed',
                 'change_source' => 'api_sync',
@@ -278,12 +282,15 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 'after_json' => $existingItem->toArray(),
                 'summary' => "File '{$existingItem->name}' was moved to trash",
             ]);
+
+            $this->syncRun->increment('events_created');
         } else {
             $existingItem->delete();
 
             DriveEvent::create([
                 'google_account_id' => $this->googleAccount->id,
                 'monitored_folder_id' => $monitoredFolder?->id,
+                'sync_run_id' => $this->syncRun->id,
                 'drive_file_id' => $existingItem->drive_file_id,
                 'event_type' => 'deleted',
                 'change_source' => 'api_sync',
@@ -292,6 +299,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 'after_json' => null,
                 'summary' => "File '{$existingItem->name}' was permanently deleted",
             ]);
+
+            $this->syncRun->increment('events_created');
         }
     }
 
@@ -314,6 +323,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 DriveEvent::create([
                     'google_account_id' => $this->googleAccount->id,
                     'monitored_folder_id' => $originalMonitoredFolderId,
+                    'sync_run_id' => $this->syncRun->id,
                     'drive_file_id' => $existingItem->drive_file_id,
                     'event_type' => 'deleted',
                     'change_source' => 'api_sync',
@@ -324,6 +334,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                     'after_json' => null,
                     'summary' => "File '{$existingItem->name}' was removed from monitored folder",
                 ]);
+
+                $this->syncRun->increment('events_created');
             }
 
             return;
@@ -372,6 +384,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 DriveEvent::create([
                     'google_account_id' => $this->googleAccount->id,
                     'monitored_folder_id' => $monitoredFolder->id,
+                    'sync_run_id' => $this->syncRun->id,
                     'drive_file_id' => $file->getId(),
                     'event_type' => 'trashed',
                     'change_source' => 'api_sync',
@@ -382,6 +395,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                     'after_json' => $existingItem->fresh()->toArray(),
                     'summary' => "File '{$file->getName()}' was moved to trash",
                 ]);
+
+                $this->syncRun->increment('events_created');
 
                 return;
             }
@@ -398,6 +413,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
             DriveEvent::create([
                 'google_account_id' => $this->googleAccount->id,
                 'monitored_folder_id' => $monitoredFolder->id,
+                'sync_run_id' => $this->syncRun->id,
                 'drive_file_id' => $file->getId(),
                 'event_type' => $eventType,
                 'change_source' => 'api_sync',
@@ -408,6 +424,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 'after_json' => $existingItem->fresh()->toArray(),
                 'summary' => $this->generateSummary($eventType, $beforeData, $newData),
             ]);
+
+            $this->syncRun->increment('events_created');
 
             if ($newData['is_folder'] && $eventType === 'metadata_changed') {
                 $this->syncFolderContents($file->getId(), $monitoredFolder, $driveService);
@@ -439,6 +457,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
             DriveEvent::create([
                 'google_account_id' => $this->googleAccount->id,
                 'monitored_folder_id' => $monitoredFolder->id,
+                'sync_run_id' => $this->syncRun->id,
                 'drive_file_id' => $file->getId(),
                 'event_type' => 'created',
                 'change_source' => 'api_sync',
@@ -449,6 +468,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 'after_json' => $newItem->fresh()->toArray(),
                 'summary' => "File '{$newData['name']}' was created",
             ]);
+
+            $this->syncRun->increment('events_created');
         }
     }
 
@@ -585,6 +606,7 @@ class ProcessChangeMetadataJob implements ShouldQueue
                     DriveEvent::create([
                         'google_account_id' => $this->googleAccount->id,
                         'monitored_folder_id' => $monitoredFolder->id,
+                        'sync_run_id' => $this->syncRun->id,
                         'drive_file_id' => $fileId,
                         'event_type' => 'created',
                         'change_source' => 'api_sync',
@@ -595,6 +617,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                         'after_json' => $newItem->fresh()->toArray(),
                         'summary' => "File '{$newData['name']}' was created",
                     ]);
+
+                    $this->syncRun->increment('events_created');
                 }
             } while ($pageToken);
         } catch (\Exception $e) {

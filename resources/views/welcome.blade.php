@@ -18,7 +18,7 @@
                 </div>
                 <div class="flex items-center gap-4">
                     @auth
-                        <a href="{{ url('/admin') }}" class="text-sm text-gray-700 hover:text-gray-900">Dashboard</a>
+                        <a href="{{ url('/dashboard') }}" class="text-sm text-gray-700 hover:text-gray-900">Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="text-sm text-gray-700 hover:text-gray-900">Log in</a>
                         @if (Route::has('register'))
@@ -43,7 +43,7 @@
             </p>
             <div class="flex gap-4 justify-center">
                 @auth
-                    <a href="{{ url('/admin') }}" class="bg-gray-900 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-800">
+                    <a href="{{ url('/dashboard') }}" class="bg-gray-900 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-800">
                         Go to Dashboard
                     </a>
                 @else
@@ -199,7 +199,7 @@
                     <h5 class="font-semibold text-gray-900 mb-4">Product</h5>
                     <ul class="space-y-2 text-sm text-gray-600">
                         <li><a href="#features" class="hover:text-gray-900">Features</a></li>
-                        <li><a href="{{ url('/admin') }}" class="hover:text-gray-900">Dashboard</a></li>
+                        <li><a href="{{ url('/dashboard') }}" class="hover:text-gray-900">Dashboard</a></li>
                         <li><a href="https://github.com/yourusername/drivespy" class="hover:text-gray-900" target="_blank">Documentation</a></li>
                     </ul>
                 </div>
@@ -222,7 +222,7 @@
             </div>
 
             <div class="border-t border-gray-200 pt-8 text-center text-sm text-gray-600">
-                <p>&copy; {{ date('Y') }} DriveSpy. Built with Laravel & Filament.</p>
+                <p>&copy; {{ date('Y') }} DriveSpy. Developed by <a href="https://rph365.com" target="_blank" class="text-gray-900 hover:underline font-medium">RPH365</a>.</p>
             </div>
         </div>
     </footer>

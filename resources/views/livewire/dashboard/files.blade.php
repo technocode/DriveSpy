@@ -1,7 +1,7 @@
 <x-dashboard.layout :heading="__('Files')" :subheading="__('Browse files from your monitored Google Drive folders')">
     {{-- Filters --}}
     <div class="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
             {{-- Search --}}
             <div>
                 <flux:input
@@ -30,10 +30,34 @@
                     @endforeach
                 </flux:select>
             </div>
+
+            {{-- Owner Filter --}}
+            <div>
+                <flux:select wire:model.live="filterOwner" :placeholder="__('All owners')">
+                    <option value="">{{ __('All owners') }}</option>
+                    @foreach ($owners as $owner)
+                        <option value="{{ $owner->owner_email }}">
+                            {{ $owner->owner_name ?: $owner->owner_email }}
+                        </option>
+                    @endforeach
+                </flux:select>
+            </div>
+
+            {{-- Modified Time Filter --}}
+            <div>
+                <flux:select wire:model.live="filterModifiedTime">
+                    <option value="all">{{ __('Any time') }}</option>
+                    <option value="today">{{ __('Today') }}</option>
+                    <option value="last_7_days">{{ __('Last 7 days') }}</option>
+                    <option value="last_30_days">{{ __('Last 30 days') }}</option>
+                    <option value="last_90_days">{{ __('Last 90 days') }}</option>
+                    <option value="last_year">{{ __('Last year') }}</option>
+                </flux:select>
+            </div>
         </div>
 
         {{-- Clear Filters --}}
-        @if ($search || $filterAccountId || $filterFolderId)
+        @if ($search || $filterAccountId || $filterFolderId || $filterOwner || $filterModifiedTime !== 'all')
             <div class="mt-3">
                 <flux:button size="sm" variant="ghost" wire:click="clearFilters">
                     {{ __('Clear all filters') }}
@@ -48,7 +72,7 @@
             <flux:icon name="document" variant="outline" class="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
             <flux:heading class="mb-2">{{ __('No Files Found') }}</flux:heading>
             <flux:text class="text-gray-600 dark:text-gray-400">
-                @if ($search || $filterAccountId || $filterFolderId)
+                @if ($search || $filterAccountId || $filterFolderId || $filterOwner || $filterModifiedTime !== 'all')
                     {{ __('Try adjusting your filters or search query.') }}
                 @else
                     {{ __('Start monitoring folders to see files here.') }}

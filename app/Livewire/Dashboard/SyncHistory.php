@@ -15,6 +15,8 @@ class SyncHistory extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'tailwind';
+
     #[Url(as: 'account')]
     public ?int $filterAccountId = null;
 
@@ -97,14 +99,7 @@ class SyncHistory extends Component
             : auth()->user()->monitoredFolders()->get();
 
         $events = $this->selectedSyncRun
-            ? DriveEvent::where('google_account_id', $this->selectedSyncRun->google_account_id)
-                ->when($this->selectedSyncRun->monitored_folder_id, function ($query, $folderId) {
-                    $query->where('monitored_folder_id', $folderId);
-                })
-                ->whereBetween('occurred_at', [
-                    $this->selectedSyncRun->started_at,
-                    $this->selectedSyncRun->finished_at ?? now(),
-                ])
+            ? DriveEvent::where('sync_run_id', $this->selectedSyncRun->id)
                 ->latest('occurred_at')
                 ->limit(50)
                 ->get()

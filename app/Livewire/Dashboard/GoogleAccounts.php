@@ -13,6 +13,8 @@ class GoogleAccounts extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'tailwind';
+
     public function disconnect(GoogleAccount $googleAccount): void
     {
         $this->authorize('delete', $googleAccount);

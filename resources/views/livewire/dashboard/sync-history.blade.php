@@ -206,8 +206,12 @@
             {{-- Events List --}}
             @if ($events->isEmpty())
                 <div class="p-8 text-center">
-                    <flux:text class="text-gray-600 dark:text-gray-400">
-                        {{ __('No events found for this sync run.') }}
+                    <flux:icon name="check-circle" class="w-12 h-12 mx-auto mb-3 text-green-500 dark:text-green-400" />
+                    <flux:text class="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                        {{ __('No Changes Detected') }}
+                    </flux:text>
+                    <flux:text class="text-sm text-gray-600 dark:text-gray-400">
+                        {{ __('All scanned files are up to date. No modifications, additions, or deletions were found during this sync.') }}
                     </flux:text>
                 </div>
             @else

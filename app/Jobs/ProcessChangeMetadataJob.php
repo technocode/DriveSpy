@@ -233,18 +233,13 @@ class ProcessChangeMetadataJob implements ShouldQueue
         $originalMonitoredFolderId = $existingItem->monitored_folder_id;
         $monitoredFolder = $existingItem->monitoredFolder;
         $fileName = $existingItem->name;
+        $lastModifierEmail = $existingItem->last_modifier_email;
+        $lastModifierName = $existingItem->last_modifier_name;
 
         $existingItem->delete();
 
         if (! $this->shouldCreateEvent($monitoredFolder, 'deleted')) {
             return;
-        }
-
-        $actor = null;
-        try {
-            $actor = $driveService->getLastModifier($fileId);
-        } catch (\Exception $e) {
-            // Ignore if we can't get actor info
         }
 
         DriveEvent::create([
@@ -255,8 +250,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
             'event_type' => 'deleted',
             'change_source' => 'api_sync',
             'occurred_at' => now(),
-            'actor_email' => $actor['email'] ?? null,
-            'actor_name' => $actor['name'] ?? null,
+            'actor_email' => $lastModifierEmail,
+            'actor_name' => $lastModifierName,
             'before_json' => $beforeData,
             'after_json' => null,
             'summary' => "File '{$fileName}' was permanently deleted",
@@ -275,14 +270,16 @@ class ProcessChangeMetadataJob implements ShouldQueue
         $isTrashed = $file && $file->getTrashed();
 
         if ($isTrashed) {
+            $lastModifier = $file->getLastModifyingUser();
+            $modifierEmail = $lastModifier?->getEmailAddress();
+            $modifierName = $lastModifier?->getDisplayName();
+
             $existingItem->update([
                 'trashed' => true,
                 'last_seen_at' => now(),
             ]);
 
             if ($this->shouldCreateEvent($monitoredFolder, 'trashed')) {
-                $actor = $driveService->getLastModifier($existingItem->drive_file_id);
-
                 DriveEvent::create([
                     'google_account_id' => $this->googleAccount->id,
                     'monitored_folder_id' => $monitoredFolder?->id,
@@ -291,8 +288,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                     'event_type' => 'trashed',
                     'change_source' => 'api_sync',
                     'occurred_at' => $file?->getTrashedTime() ?? $file?->getModifiedTime() ?? now(),
-                    'actor_email' => $actor['email'] ?? null,
-                    'actor_name' => $actor['name'] ?? null,
+                    'actor_email' => $modifierEmail,
+                    'actor_name' => $modifierName,
                     'before_json' => $beforeData,
                     'after_json' => $existingItem->toArray(),
                     'summary' => "File '{$existingItem->name}' was moved to trash",
@@ -329,30 +326,27 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 $beforeData = $existingItem->toArray();
                 $originalMonitoredFolderId = $existingItem->monitored_folder_id;
                 $originalMonitoredFolder = $existingItem->monitoredFolder;
+                $driveFileId = $existingItem->drive_file_id;
+                $fileName = $existingItem->name;
+                $lastModifierEmail = $existingItem->last_modifier_email;
+                $lastModifierName = $existingItem->last_modifier_name;
 
                 $existingItem->delete();
 
                 if ($this->shouldCreateEvent($originalMonitoredFolder, 'deleted')) {
-                    $actor = null;
-                    try {
-                        $actor = $driveService->getLastModifier($existingItem->drive_file_id);
-                    } catch (\Exception $e) {
-                        // Ignore if we can't get actor info
-                    }
-
                     DriveEvent::create([
                         'google_account_id' => $this->googleAccount->id,
                         'monitored_folder_id' => $originalMonitoredFolderId,
                         'sync_run_id' => $this->syncRun->id,
-                        'drive_file_id' => $existingItem->drive_file_id,
+                        'drive_file_id' => $driveFileId,
                         'event_type' => 'deleted',
                         'change_source' => 'api_sync',
                         'occurred_at' => now(),
-                        'actor_email' => $actor['email'] ?? null,
-                        'actor_name' => $actor['name'] ?? null,
+                        'actor_email' => $lastModifierEmail,
+                        'actor_name' => $lastModifierName,
                         'before_json' => $beforeData,
                         'after_json' => null,
-                        'summary' => "File '{$existingItem->name}' was removed from monitored folder",
+                        'summary' => "File '{$fileName}' was removed from monitored folder",
                     ]);
 
                     $this->syncRun->increment('events_created');
@@ -401,8 +395,6 @@ class ProcessChangeMetadataJob implements ShouldQueue
                 $existingItem->update($newData);
 
                 if ($this->shouldCreateEvent($monitoredFolder, 'trashed')) {
-                    $actor = $driveService->getLastModifier($file->getId());
-
                     DriveEvent::create([
                         'google_account_id' => $this->googleAccount->id,
                         'monitored_folder_id' => $monitoredFolder->id,
@@ -411,8 +403,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                         'event_type' => 'trashed',
                         'change_source' => 'api_sync',
                         'occurred_at' => $file->getTrashedTime() ?? $file->getModifiedTime() ?? now(),
-                        'actor_email' => $actor['email'] ?? null,
-                        'actor_name' => $actor['name'] ?? null,
+                        'actor_email' => $modifierEmail,
+                        'actor_name' => $modifierName,
                         'before_json' => $beforeData,
                         'after_json' => $existingItem->fresh()->toArray(),
                         'summary' => "File '{$file->getName()}' was moved to trash",
@@ -433,8 +425,6 @@ class ProcessChangeMetadataJob implements ShouldQueue
             }
 
             if ($this->shouldCreateEvent($monitoredFolder, $eventType)) {
-                $actor = $driveService->getLastModifier($file->getId());
-
                 DriveEvent::create([
                     'google_account_id' => $this->googleAccount->id,
                     'monitored_folder_id' => $monitoredFolder->id,
@@ -443,8 +433,8 @@ class ProcessChangeMetadataJob implements ShouldQueue
                     'event_type' => $eventType,
                     'change_source' => 'api_sync',
                     'occurred_at' => $file->getModifiedTime() ?? now(),
-                    'actor_email' => $actor['email'] ?? null,
-                    'actor_name' => $actor['name'] ?? null,
+                    'actor_email' => $modifierEmail,
+                    'actor_name' => $modifierName,
                     'before_json' => $beforeData,
                     'after_json' => $existingItem->fresh()->toArray(),
                     'summary' => $this->generateSummary($eventType, $beforeData, $newData),

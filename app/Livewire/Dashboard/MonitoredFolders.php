@@ -32,18 +32,21 @@ class MonitoredFolders extends Component
 
     public bool $includeSubfolders = true;
 
+    public array $selectedEventTypes = [];
+
     public ?int $editingFolderId = null;
 
     public function openCreateModal(): void
     {
         $this->reset(['selectedAccountId', 'selectedFolderId', 'selectedFolderName', 'includeSubfolders']);
+        $this->selectedEventTypes = array_keys((new MonitoredFolder)->getAvailableEventTypes());
         $this->showCreateModal = true;
     }
 
     public function closeCreateModal(): void
     {
         $this->showCreateModal = false;
-        $this->reset(['selectedAccountId', 'selectedFolderId', 'selectedFolderName', 'includeSubfolders']);
+        $this->reset(['selectedAccountId', 'selectedFolderId', 'selectedFolderName', 'includeSubfolders', 'selectedEventTypes']);
     }
 
     public function updatedSelectedAccountId(): void
@@ -69,6 +72,7 @@ class MonitoredFolders extends Component
             'selectedFolderId' => 'required|string',
             'selectedFolderName' => 'required|string',
             'includeSubfolders' => 'boolean',
+            'selectedEventTypes' => 'required|array|min:1',
         ]);
 
         $account = GoogleAccount::findOrFail($this->selectedAccountId);
@@ -89,6 +93,7 @@ class MonitoredFolders extends Component
             'root_drive_file_id' => $this->selectedFolderId,
             'root_name' => $this->selectedFolderName,
             'include_subfolders' => $this->includeSubfolders,
+            'subscribed_event_types' => $this->selectedEventTypes,
             'status' => 'indexing',
         ]);
 
@@ -105,19 +110,21 @@ class MonitoredFolders extends Component
 
         $this->editingFolderId = $folder->id;
         $this->includeSubfolders = $folder->include_subfolders;
+        $this->selectedEventTypes = $folder->subscribed_event_types ?? array_keys($folder->getAvailableEventTypes());
         $this->showEditModal = true;
     }
 
     public function closeEditModal(): void
     {
         $this->showEditModal = false;
-        $this->reset(['editingFolderId', 'includeSubfolders']);
+        $this->reset(['editingFolderId', 'includeSubfolders', 'selectedEventTypes']);
     }
 
     public function update(): void
     {
         $this->validate([
             'includeSubfolders' => 'boolean',
+            'selectedEventTypes' => 'required|array|min:1',
         ]);
 
         $folder = MonitoredFolder::findOrFail($this->editingFolderId);
@@ -125,6 +132,7 @@ class MonitoredFolders extends Component
 
         $folder->update([
             'include_subfolders' => $this->includeSubfolders,
+            'subscribed_event_types' => $this->selectedEventTypes,
         ]);
 
         session()->flash('success', 'Folder settings updated successfully!');
@@ -163,9 +171,9 @@ class MonitoredFolders extends Component
             return;
         }
 
-        SyncChangesJob::dispatch($folder->googleAccount, $folder);
+        SyncChangesJob::dispatch($folder->googleAccount);
 
-        session()->flash('success', 'Incremental sync has been queued! Changes will be detected and logged shortly.');
+        session()->flash('success', 'Incremental sync has been queued for all folders in this Google Account! Changes will be detected and logged shortly.');
     }
 
     public function fullSyncFolder(MonitoredFolder $folder): void
@@ -209,9 +217,12 @@ class MonitoredFolders extends Component
             ->where('status', 'active')
             ->get();
 
+        $availableEventTypes = (new MonitoredFolder)->getAvailableEventTypes();
+
         return view('livewire.dashboard.monitored-folders', [
             'folders' => $folders,
             'googleAccounts' => $googleAccounts,
+            'availableEventTypes' => $availableEventTypes,
         ]);
     }
 }

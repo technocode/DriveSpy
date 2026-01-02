@@ -17,6 +17,7 @@ class MonitoredFolder extends Model
         'root_drive_file_id',
         'root_name',
         'include_subfolders',
+        'subscribed_event_types',
         'status',
         'last_indexed_at',
         'last_changed_at',
@@ -27,9 +28,33 @@ class MonitoredFolder extends Model
     {
         return [
             'include_subfolders' => 'boolean',
+            'subscribed_event_types' => 'array',
             'last_indexed_at' => 'datetime',
             'last_changed_at' => 'datetime',
         ];
+    }
+
+    public function getAvailableEventTypes(): array
+    {
+        return [
+            'created' => 'File Created',
+            'updated' => 'File Updated',
+            'deleted' => 'File Deleted',
+            'trashed' => 'File Trashed',
+            'restored' => 'File Restored',
+            'renamed' => 'File Renamed',
+            'moved' => 'File Moved',
+            'metadata_changed' => 'Metadata Changed',
+        ];
+    }
+
+    public function isEventTypeSubscribed(string $eventType): bool
+    {
+        if (empty($this->subscribed_event_types)) {
+            return true;
+        }
+
+        return in_array($eventType, $this->subscribed_event_types);
     }
 
     public function googleAccount(): BelongsTo

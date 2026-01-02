@@ -126,14 +126,15 @@
                                     {{ __('Actions') }}
                                 </flux:button>
 
-                                <flux:menu class="!w-[180px]">
+                                <flux:menu class="!w-[220px]">
                                     <flux:menu.radio.group>
                                         <flux:menu.item
                                             as="button"
                                             wire:click="syncFolder({{ $folder->id }})"
+                                            wire:confirm="This will sync all folders for {{ $folder->googleAccount->email }}. Continue?"
                                             icon="arrow-path"
                                         >
-                                            {{ __('Quick Sync') }}
+                                            {{ __('Sync All Folders') }}
                                         </flux:menu.item>
                                         {{-- Temporarily disabled Full Sync --}}
                                         {{-- <flux:menu.item
@@ -236,6 +237,30 @@
                     </div>
                 </label>
             </div>
+
+            {{-- Event Type Selection --}}
+            <div>
+                <flux:text class="font-medium mb-2">{{ __('Subscribe to events') }}</flux:text>
+                <flux:text class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    {{ __('Select which types of file events you want to track') }}
+                </flux:text>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach ($availableEventTypes as $eventKey => $eventLabel)
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                wire:model="selectedEventTypes"
+                                value="{{ $eventKey }}"
+                                class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            />
+                            <flux:text class="text-sm">{{ $eventLabel }}</flux:text>
+                        </label>
+                    @endforeach
+                </div>
+                @error('selectedEventTypes')
+                    <flux:text class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</flux:text>
+                @enderror
+            </div>
         </div>
 
         <div class="flex gap-2 mt-6">
@@ -263,6 +288,30 @@
                         </flux:text>
                     </div>
                 </label>
+            </div>
+
+            {{-- Event Type Selection --}}
+            <div>
+                <flux:text class="font-medium mb-2">{{ __('Subscribe to events') }}</flux:text>
+                <flux:text class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                    {{ __('Select which types of file events you want to track') }}
+                </flux:text>
+                <div class="grid grid-cols-2 gap-2">
+                    @foreach ($availableEventTypes as $eventKey => $eventLabel)
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                wire:model="selectedEventTypes"
+                                value="{{ $eventKey }}"
+                                class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400"
+                            />
+                            <flux:text class="text-sm">{{ $eventLabel }}</flux:text>
+                        </label>
+                    @endforeach
+                </div>
+                @error('selectedEventTypes')
+                    <flux:text class="text-xs text-red-600 dark:text-red-400 mt-1">{{ $message }}</flux:text>
+                @enderror
             </div>
         </div>
 

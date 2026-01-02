@@ -14,22 +14,24 @@ class AutoSyncMonitoredFolders extends Command
 
     public function handle(): int
     {
-        $folders = MonitoredFolder::with('googleAccount')
+        $accounts = MonitoredFolder::with('googleAccount')
             ->whereNotNull('last_indexed_at')
-            ->get();
+            ->get()
+            ->pluck('googleAccount')
+            ->unique('id');
 
-        if ($folders->isEmpty()) {
-            $this->info('No monitored folders to sync.');
+        if ($accounts->isEmpty()) {
+            $this->info('No Google accounts with indexed folders to sync.');
 
             return self::SUCCESS;
         }
 
-        foreach ($folders as $folder) {
-            SyncChangesJob::dispatch($folder->googleAccount, $folder);
-            $this->info("Queued sync for: {$folder->root_name} ({$folder->googleAccount->email})");
+        foreach ($accounts as $account) {
+            SyncChangesJob::dispatch($account);
+            $this->info("Queued sync for Google Account: {$account->email}");
         }
 
-        $this->info("Total folders queued: {$folders->count()}");
+        $this->info("Total accounts queued: {$accounts->count()}");
 
         return self::SUCCESS;
     }

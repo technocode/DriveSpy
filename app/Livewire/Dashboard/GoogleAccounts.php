@@ -15,6 +15,15 @@ class GoogleAccounts extends Component
 
     protected $paginationTheme = 'tailwind';
 
+    public function reconnect(GoogleAccount $googleAccount): void
+    {
+        $this->authorize('update', $googleAccount);
+
+        session(['reconnecting_google_account_id' => $googleAccount->id]);
+
+        $this->redirect(route('google.oauth.redirect'), navigate: false);
+    }
+
     public function disconnect(GoogleAccount $googleAccount): void
     {
         $this->authorize('delete', $googleAccount);

@@ -99,8 +99,28 @@
                         </div>
                     @endif
 
+                    {{-- Last Error --}}
+                    @if ($account->last_error)
+                        <div class="mt-4">
+                            <flux:text class="text-xs text-red-600 dark:text-red-400">
+                                {{ $account->last_error }}
+                            </flux:text>
+                        </div>
+                    @endif
+
                     {{-- Actions --}}
-                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                        @if ($account->status === 'error')
+                            <flux:button
+                                variant="primary"
+                                size="sm"
+                                wire:click="reconnect({{ $account->id }})"
+                                class="w-full"
+                            >
+                                <flux:icon name="arrow-path" class="w-4 h-4 mr-2" />
+                                {{ __('Reconnect') }}
+                            </flux:button>
+                        @endif
                         <flux:button
                             variant="danger"
                             size="sm"

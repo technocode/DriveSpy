@@ -24,6 +24,15 @@ class GoogleDriveService
 
     private function initializeClient(): Client
     {
+        if (! $this->googleAccount->access_token || ! $this->googleAccount->refresh_token) {
+            $this->googleAccount->update([
+                'status' => 'error',
+                'last_error' => 'Missing access or refresh token - please reconnect your Google account',
+            ]);
+
+            throw new \Exception('Google account tokens are missing. Please reconnect your account.');
+        }
+
         $client = new Client;
         $client->setClientId(config('services.google.client_id'));
         $client->setClientSecret(config('services.google.client_secret'));
@@ -35,6 +44,24 @@ class GoogleDriveService
 
         if ($client->isAccessTokenExpired() && $this->googleAccount->refresh_token) {
             $newToken = $client->fetchAccessTokenWithRefreshToken($this->googleAccount->refresh_token);
+
+            if (isset($newToken['error'])) {
+                $this->googleAccount->update([
+                    'status' => 'error',
+                    'last_error' => $newToken['error_description'] ?? $newToken['error'] ?? 'Token refresh failed',
+                ]);
+
+                throw new \Exception('Failed to refresh access token: '.$newToken['error_description'] ?? $newToken['error']);
+            }
+
+            if (! isset($newToken['access_token'])) {
+                $this->googleAccount->update([
+                    'status' => 'error',
+                    'last_error' => 'Token refresh returned invalid response',
+                ]);
+
+                throw new \Exception('Token refresh returned invalid response - no access_token');
+            }
 
             $this->googleAccount->update([
                 'access_token' => $newToken['access_token'],

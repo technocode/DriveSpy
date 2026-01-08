@@ -53,6 +53,37 @@ class GoogleOAuthController extends Controller
                 $scopes = implode(' ', $scopes);
             }
 
+            $reconnectingAccountId = session('reconnecting_google_account_id');
+
+            if ($reconnectingAccountId) {
+                $googleAccount = GoogleAccount::where('id', $reconnectingAccountId)
+                    ->where('user_id', auth()->id())
+                    ->first();
+
+                if ($googleAccount && $googleAccount->google_user_id === $userInfo->id) {
+                    $googleAccount->update([
+                        'access_token' => $token['access_token'],
+                        'refresh_token' => $token['refresh_token'] ?? $googleAccount->refresh_token,
+                        'token_expires_at' => isset($token['expires_in'])
+                            ? now()->addSeconds($token['expires_in'])
+                            : null,
+                        'scopes' => $scopes,
+                        'status' => 'active',
+                        'last_error' => null,
+                    ]);
+
+                    session()->forget('reconnecting_google_account_id');
+
+                    return redirect()->route($redirectRoute)
+                        ->with('success', 'Google account reconnected successfully!');
+                }
+
+                session()->forget('reconnecting_google_account_id');
+
+                return redirect()->route($redirectRoute)
+                    ->with('error', 'Cannot reconnect: Google account mismatch. Please disconnect and reconnect with the correct account.');
+            }
+
             GoogleAccount::updateOrCreate(
                 [
                     'google_user_id' => $userInfo->id,
